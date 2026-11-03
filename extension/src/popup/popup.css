@@ -1,0 +1,93 @@
+html, body { background: var(--surface); }
+body { width: 360px; min-height: 200px; }
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.head div { display: flex; flex-direction: column; line-height: 1.2; }
+.head strong { font-size: 14px; }
+.head span { font-size: 12px; color: var(--muted); }
+
+main { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.pad { padding: 4px 0; margin: 0; }
+
+.page {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  color: var(--text-2);
+  overflow: hidden;
+}
+.page b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+p.hint { margin: -4px 0 0; }
+details.ctx summary { cursor: pointer; font-size: 12.5px; color: var(--muted); padding: 2px 0; }
+details.ctx textarea { margin-top: 6px; min-height: 70px; }
+details.ctx .sub { display: block; margin-top: 8px; font-size: 12px; color: var(--muted); }
+details.ctx .input { margin-top: 4px; }
+
+.session {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, transparent);
+}
+.session .title { display: flex; align-items: center; gap: 8px; font-weight: 650; color: var(--primary-text); }
+.session .title span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session .meta { font-size: 12px; color: var(--muted); }
+
+.actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.action {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .08s;
+}
+.action:hover { border-color: var(--primary); background: var(--primary-soft); }
+.action:active { transform: scale(.98); }
+.action svg { color: var(--primary); }
+.action .label { max-width: 100%; text-align: center; overflow-wrap: anywhere; }
+.action .keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; max-width: 100%; }
+.action kbd { font-size: 10.5px; font-weight: 500; line-height: 16px; min-width: 20px; padding: 0 4px; text-align: center; }
+.action kbd.sym { font-size: 13px; line-height: 16px; }
+
+.recent h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 4px 0 6px; }
+.recent ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.recent li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; }
+.recent li:hover { background: var(--surface-2); }
+.recent li div { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.recent li b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recent li span { font-size: 11.5px; color: var(--muted); }
+
+.foot { display: flex; gap: 8px; }
+.foot .btn { flex: 1; min-width: 0; justify-content: center; padding-left: 8px; padding-right: 8px; white-space: nowrap; }
+.foot.fit .btn { flex: 1 1 auto; }
+.session.paused { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 30%, transparent); }
+.session.paused .title { color: var(--text); }
+.dot-paused { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: var(--warn); color: #fff; flex: none; }
+details.new-run > summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-2); padding: 2px 0; }
+details.new-run[open] > summary { margin-bottom: 10px; }
+.shortcuts { font-size: 11.5px; color: var(--muted); text-align: center; }

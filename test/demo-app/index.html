@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="version" content="2.3.1-demo">
+  <title>Bestellportal – Warenkorb</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">🛒 Bestellportal</div>
+    <nav aria-label="Hauptnavigation">
+      <a href="/" data-route>Warenkorb</a>
+      <a href="/lieferung" data-route>Lieferung</a>
+      <a href="/konto" data-route>Konto</a>
+    </nav>
+    <button class="help-btn" type="button" id="btn-news">Newsletter</button>
+    <button class="help-btn" type="button" id="btn-help">Hilfe</button>
+    <span class="close-x" title="">×</span>
+  </header>
+
+  <dialog id="help-dialog" aria-labelledby="help-title">
+    <h2 id="help-title">Hilfe zum Bestellvorgang</h2>
+    <p class="help-text">Bei Fragen wenden Sie sich an den Support (Mo–Fr 9–17 Uhr).</p>
+    <button type="button" id="help-close">Schließen</button>
+  </dialog>
+
+  <div class="news-modal" id="news-modal" role="dialog" aria-modal="true" aria-label="Newsletter" hidden>
+    <div class="news-box">
+      <h2>Newsletter abonnieren</h2>
+      <input id="news-mail" type="email" placeholder="E-Mail">
+      <button type="button" id="news-close">Später</button>
+    </div>
+  </div>
+
+  <main id="view"></main>
+
+  <promo-banner></promo-banner>
+
+  <footer class="foot">© 2026 Demo GmbH</footer>
+
+  <template id="tpl-cart">
+    <section class="cart" aria-label="Warenkorb">
+      <h1>Ihr Warenkorb</h1>
+      <ul class="items">
+        <li><span>Ergonomischer Bürostuhl</span><span class="price">249,00 €</span></li>
+        <li><span>Monitorhalterung</span><span class="price">59,90 €</span></li>
+      </ul>
+      <p class="hint-text">Versandkosten werden im nächsten Schritt berechnet. Rabatte nur bis 23:59 Uhr.</p>
+      <div class="coupon" id="coupon">Gutschein einlösen</div>
+      <input class="code" placeholder="Code">
+      <div class="actions">
+        <button class="btn-secondary" type="button" id="btn-clear">Leeren</button>
+        <button class="btn-primary" type="button" id="btn-next" data-testid="checkout-next">Weiter</button>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-delivery">
+    <section class="delivery">
+      <h1>Lieferadresse</h1>
+      <form id="address" name="lieferadresse">
+        <label for="street">Straße</label>
+        <input id="street" name="street">
+        <input name="zip" placeholder="PLZ">
+        <label>Ort <input name="city"></label>
+        <label><input type="checkbox" name="express"> Expressversand (+19 €)</label>
+        <button class="btn-primary" type="submit">Kostenpflichtig bestellen</button>
+      </form>
+      <p class="error-box" id="error" hidden></p>
+    </section>
+  </template>
+
+  <template id="tpl-account">
+    <section><h1>Konto</h1><p>Bitte anmelden.</p></section>
+  </template>
+
+  <script src="/app.js"></script>
+</body>
+</html>

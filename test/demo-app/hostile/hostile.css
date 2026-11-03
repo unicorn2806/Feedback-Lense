@@ -1,0 +1,9 @@
+/* Aggressive global rules some sites ship */
+*, *::before, *::after { box-sizing: content-box !important; }
+div { display: block !important; }
+button { all: unset; background: #222; color: #fff; padding: 8px 12px; }
+html { scroll-behavior: smooth; }
+body { margin: 0; padding: 60px 24px; font-family: Georgia, serif; }
+.sticky { position: fixed; top: 0; left: 0; right: 0; height: 40px; background: #ffe; z-index: 2147483647; border-bottom: 1px solid #cc9; padding: 8px 24px; }
+.lead { color: #777; }
+iframe { width: 600px; height: 160px; border: 2px solid #999; margin-top: 20px; display: block; }

@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feedback Lens – Datenschutz / Privacy</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #f6f7fb; --card: #fff; --text: #0f172a; --muted: #64748b; --border: #e2e8f0; --accent: #4f46e5; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0b1020; --card: #121933; --text: #e2e8f0; --muted: #94a3b8; --border: #26304f; --accent: #818cf8; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 780px; margin: 0 auto; padding: 40px 16px 64px; }
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+    header .logo { width: 44px; height: 44px; border-radius: 12px; background: var(--accent); display: grid; place-items: center; color: #fff; font-weight: 800; }
+    h1 { font-size: 28px; margin: 0; }
+    h2 { font-size: 20px; margin: 34px 0 8px; }
+    h3 { font-size: 16px; margin: 22px 0 6px; }
+    p, li { margin: 6px 0; }
+    ul { padding-left: 22px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 6px 22px 18px; margin-top: 22px; }
+    .meta { color: var(--muted); font-size: 14px; }
+    .todo { border: 2px dashed #f59e0b; border-radius: 10px; padding: 10px 14px; background: color-mix(in srgb, #f59e0b 10%, transparent); }
+    nav a { color: var(--accent); margin-right: 14px; }
+  </style>
+</head>
+<body>
+<main>
+  <header><div class="logo" aria-hidden="true">FL</div><h1>Feedback Lens</h1></header>
+  <p class="meta">Datenschutzerklärung für die Browser-Erweiterung · Privacy policy for the browser extension · Stand / last updated: 30.10.2026</p>
+  <nav><a href="#de">Deutsch</a><a href="#en">English</a></nav>
+
+  <section class="card" id="de" lang="de">
+    <h2>Datenschutzerklärung</h2>
+    <p><strong>Kurz gesagt:</strong> Feedback Lens verarbeitet alle Daten ausschließlich lokal in deinem Browser. Die Erweiterung hat keinen Server, kein Konto, kein Tracking und sendet keine Daten ins Internet. Daten verlassen deinen Rechner nur, wenn du selbst einen Export herunterlädst und weitergibst.</p>
+
+    <h3>Verantwortlich / Kontakt</h3>
+    <div class="todo">[Name bzw. Firma] · [Anschrift] · [E-Mail-Adresse]</div>
+
+    <h3>Welche Daten verarbeitet werden</h3>
+    <p>Nur während eines Testlaufs, den du ausdrücklich startest, und nur auf den Domains dieses Testlaufs:</p>
+    <ul>
+      <li><strong>Deine Anmerkungen:</strong> Titel, Beschreibung, Erwartung, Kategorie, Priorität.</li>
+      <li><strong>Screenshots</strong> des sichtbaren Bereichs, wenn du eine Anmerkung anlegst, einen weiteren Screenshot dazu aufnimmst oder einen Prüfpunkt eines Testplans als „in Ordnung“ bestätigst, sowie Bilder, die du im Dashboard selbst einfügst. Sie zeigen, was auf dem Bildschirm war – unter Umständen auch personenbezogene oder vertrauliche Inhalte der getesteten Anwendung. Zur Seite gelegte Entwürfe (Text, Screenshot, Markierungen) bleiben bis zum Speichern oder Verwerfen lokal gespeichert.</li>
+      <li><strong>Technischer Kontext der markierten Stelle:</strong> Selektor, gerendertes HTML (Formularwerte und versteckte Felder entfernt), berechnete Styles, Kontrast, Barrierefreiheits-Hinweise, sichtbare Meldungen der Seite, App-Version, Namen der geladenen Skripte.</li>
+      <li><strong>Klickpfad:</strong> Adressen und Titel der besuchten Seiten, Klicks auf Bedienelemente, Eingaben in Formularfelder <em>nur als Anzahl der Zeichen</em> (nie der Inhalt), Formularversand. Für das Einzeichnen der letzten Klicks im Screenshot zusätzlich deren Position auf der Seite.</li>
+      <li><strong>Technische Fehler der Seite:</strong> Konsolenfehler und -warnungen, JavaScript-Fehler, fehlgeschlagene oder langsame Netzwerkanfragen (Adresse, Status, die ersten 300 Zeichen der Fehlerantwort, Request-ID).</li>
+      <li><strong>Einstellungen</strong> der Erweiterung und deine <strong>Testpläne</strong>.</li>
+    </ul>
+    <p><strong>Schwärzung:</strong> Bevor etwas aus der Seite gespeichert wird, ersetzt Feedback Lens darin Passwörter, Tokens, API-Schlüssel, private Schlüssel, Kreditkartennummern, IBANs und E-Mail-Adressen (z. B. durch <code>[E-Mail entfernt]</code>), maskiert sensible Attribute im HTML und speichert bei Auswahllisten nur die Position der gewählten Option. Sensible URL-Parameter (z. B. <code>token</code>, <code>password</code>, <code>session</code>, <code>email</code>) werden durch <code>***</code> ersetzt; wahlweise werden alle URL-Parameter entfernt. Die Erkennung arbeitet mit Mustern und erfasst nicht jede Angabe (z. B. keine Namen oder Anschriften); sie ist abschaltbar. Auf Screenshots wirkt sie nicht – vertrauliche Stellen kannst du dort im Anmerkungsdialog mit „Schwärzen“ übermalen; gespeichert wird nur das geschwärzte Bild.</p>
+    <p>Die Erfassung von Konsole, Netzwerk und Klickpfad lässt sich in den Einstellungen einzeln abschalten. Endet ein Testlauf, hört die Erweiterung in den offenen Tabs sofort auf zu erfassen.</p>
+
+    <h3>Diktat (optional)</h3>
+    <p>Wenn du das Diktat nutzt, wird Sprache über die Spracherkennung des Browsers <strong>ausschließlich auf deinem Gerät</strong> in Text umgewandelt; ist das nicht möglich, bleibt das Diktat aus. Audio wird weder gespeichert noch übertragen. Das Mikrofon ist nur aktiv, solange das Mikrofon-Symbol rot ist. Die Mikrofon-Freigabe gilt nur für die Erweiterung, nicht für die getesteten Websites. Beim einmaligen Installieren des Sprachpakets lädt der Browser (nicht die Erweiterung) ein Sprachmodell herunter.</p>
+
+    <h3>Wo die Daten liegen und wie lange</h3>
+    <p>Im lokalen Speicher der Erweiterung in deinem Browserprofil – bis du einen Testlauf oder über „Einstellungen → Alle Daten löschen“ alles löschst oder die Erweiterung entfernst. Webseiten haben keinen Zugriff auf diesen Speicher.</p>
+
+    <h3>Weitergabe</h3>
+    <p>Feedback Lens gibt keine Daten an die Entwickler der Erweiterung oder an Dritte weiter, verkauft keine Daten und nutzt sie nicht für Werbung oder andere Zwecke. Einen Export (ZIP, HTML, JSON, Markdown) erzeugst nur du selbst; wem du ihn gibst, entscheidest du. Bitte prüfe Exporte vor der Weitergabe auf vertrauliche Inhalte, insbesondere Screenshots.</p>
+
+    <h3>Berechtigungen</h3>
+    <p>Die Erweiterung darf auf allen Websites aktiv werden, weil sie beliebige Anwendungen testen können muss. Tatsächlich lädt sie nur auf Domains eines laufenden Testlaufs und nimmt nur von deren Tabs Daten an. Unternehmen können die erlaubten Domains zusätzlich per Browser-Richtlinie festlegen. Details zu jeder Berechtigung stehen in der Beschreibung im Store.</p>
+
+    <h3>Deine Rechte</h3>
+    <p>Da keine Daten an uns übermittelt werden, liegen sie nicht bei uns vor; du kannst sie jederzeit selbst einsehen (Dashboard), exportieren und löschen. Bei Fragen erreichst du uns über die oben genannte Adresse.</p>
+
+    <h3>Änderungen</h3>
+    <p>Ändert sich die Verarbeitung, wird diese Seite aktualisiert und das Datum oben angepasst.</p>
+  </section>
+
+  <section class="card" id="en" lang="en">
+    <h2>Privacy policy</h2>
+    <p><strong>In short:</strong> Feedback Lens processes all data locally in your browser. The extension has no server, no account and no tracking, and it sends no data over the internet. Data only leaves your computer if you download an export yourself and pass it on.</p>
+
+    <h3>Controller / contact</h3>
+    <div class="todo">[Name or company] · [Address] · [E-mail address]</div>
+
+    <h3>What is processed</h3>
+    <p>Only during a test run you explicitly start, and only on the domains of that test run:</p>
+    <ul>
+      <li><strong>Your annotations:</strong> title, description, expectation, category, priority.</li>
+      <li><strong>Screenshots</strong> of the visible area when you create an annotation, take a further screenshot for it or confirm a test plan checkpoint as OK, and pictures you paste in the dashboard yourself. They show what was on screen – possibly including personal or confidential content of the tested application. Drafts you set aside (text, screenshot, marks) stay stored locally until you save or discard them.</li>
+      <li><strong>Technical context of the marked spot:</strong> selector, rendered HTML (form values and hidden fields removed), computed styles, contrast, accessibility hints, messages shown on the page, app version, names of loaded scripts.</li>
+      <li><strong>Click trail:</strong> addresses and titles of visited pages, clicks on controls, form input <em>only as the number of characters</em> (never the content), form submissions. To draw your last clicks on a screenshot, also their position on the page.</li>
+      <li><strong>Technical errors of the page:</strong> console errors and warnings, JavaScript errors, failed or slow network requests (address, status, the first 300 characters of the error response, request ID).</li>
+      <li>The extension's <strong>settings</strong> and your <strong>test plans</strong>.</li>
+    </ul>
+    <p><strong>Redaction:</strong> Before anything from the page is stored, Feedback Lens replaces passwords, tokens, API keys, private keys, credit card numbers, IBANs and e-mail addresses in it (e.g. with <code>[E-Mail entfernt]</code>), masks sensitive attributes in HTML and stores only the position of the selected option in drop-down lists. Sensitive URL parameters (e.g. <code>token</code>, <code>password</code>, <code>session</code>, <code>email</code>) are replaced with <code>***</code>; optionally all URL parameters are removed. Detection is pattern-based and does not catch everything (e.g. not names or addresses); it can be turned off. It does not apply to screenshots – you can black out confidential parts there with "Schwärzen" in the annotation dialog; only the blacked-out image is stored.</p>
+    <p>Capturing console, network and click trail can be turned off individually in the settings. When a test run ends, the extension stops capturing in open tabs immediately.</p>
+
+    <h3>Dictation (optional)</h3>
+    <p>If you use dictation, speech is converted to text by the browser's speech recognition <strong>on your device only</strong>; if that is not possible, dictation stays off. Audio is neither stored nor transmitted. The microphone is only active while the microphone icon is red. The microphone permission applies to the extension only, not to the tested websites. When installing the language pack once, the browser (not the extension) downloads a speech model.</p>
+
+    <h3>Where data is stored and for how long</h3>
+    <p>In the extension's local storage in your browser profile – until you delete a test run, use "Settings → Delete all data" or remove the extension. Websites have no access to this storage.</p>
+
+    <h3>Sharing</h3>
+    <p>Feedback Lens does not share data with its developers or third parties, does not sell data and does not use it for advertising or any other purpose. Only you create exports (ZIP, HTML, JSON, Markdown) and decide who receives them. Please check exports for confidential content, especially screenshots, before passing them on.</p>
+
+    <h3>Permissions</h3>
+    <p>The extension may become active on all websites because it has to be able to test any application. It actually loads only on domains of a running test run and accepts data only from their tabs. Companies can additionally restrict the allowed domains via browser policy. The store description explains each permission.</p>
+
+    <h3>Your rights</h3>
+    <p>As no data is transmitted to us, we do not hold it; you can view (dashboard), export and delete it yourself at any time. For questions, contact us at the address above.</p>
+
+    <h3>Changes</h3>
+    <p>If the processing changes, this page will be updated and the date above adjusted.</p>
+  </section>
+</main>
+</body>
+</html>

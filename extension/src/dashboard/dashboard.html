@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feedback Lens – Dashboard</title>
+  <link rel="icon" href="../../icons/icon32.png">
+  <link rel="stylesheet" href="../shared/ui.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="Testläufe">
+      <div class="brand">
+        <img src="../../icons/icon48.png" alt="" width="28" height="28">
+        <div><strong>Feedback Lens</strong><span>Dashboard</span></div>
+      </div>
+      <div class="side-head">
+        <h2>Testläufe</h2>
+        <button class="icon-btn" id="btn-import" type="button" title="Sicherung importieren (.json)" aria-label="Sicherung importieren"></button>
+      </div>
+      <nav id="session-list" class="session-list"></nav>
+      <div class="side-foot">
+        <button class="btn ghost block" id="btn-plans" type="button"></button>
+        <button class="btn ghost block" id="btn-settings" type="button"></button>
+        <div class="storage" id="storage-usage"></div>
+      </div>
+    </aside>
+    <main id="main" class="main" tabindex="-1"></main>
+  </div>
+
+  <dialog id="modal" class="modal" aria-modal="true"></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="import-file" accept="application/json,.json" hidden>
+  <script src="../shared/marks.js"></script>
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>

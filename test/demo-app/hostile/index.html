@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Hostile – strenge CSP</title>
+  <link rel="stylesheet" href="/hostile/hostile.css">
+</head>
+<body>
+  <div class="sticky">Sticky Header mit z-index 2147483647</div>
+  <h1>Seite mit strenger CSP &amp; Trusted Types</h1>
+  <p id="lead" class="lead">Dieser Text steht auf einer Seite, die Inline-Styles, Inline-Skripte, fremde Bilder und HTML-Strings verbietet.</p>
+  <button id="api">API aufrufen</button>
+  <iframe id="frame" src="/hostile/frame.html" title="Eingebettetes Formular"></iframe>
+  <script src="/hostile/hostile.js"></script>
+</body>
+</html>

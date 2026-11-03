@@ -1,0 +1,70 @@
+{
+  "manifest_version": 3,
+  "name": "Feedback Lens – Web-Apps testen & anmerken",
+  "short_name": "Feedback Lens",
+  "version": "1.12.0",
+  "description": "Web-Apps testen: Probleme direkt am Element anmerken – mit Screenshot und Technik-Kontext als Paket für Claude Code. Alles lokal.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Feedback Lens",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "scripting",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+F"
+      },
+      "description": "Feedback-Lens-Menü öffnen"
+    },
+    "pick-element": {
+      "suggested_key": {
+        "default": "Alt+Shift+E"
+      },
+      "description": "Element markieren und anmerken"
+    },
+    "select-region": {
+      "suggested_key": {
+        "default": "Alt+Shift+D"
+      },
+      "description": "Bereich markieren und anmerken"
+    },
+    "page-note": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
+      "description": "Notiz zur ganzen Seite"
+    }
+  },
+  "sandbox": {
+    "pages": [
+      "src/preview/preview.html"
+    ]
+  },
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts allow-modals allow-downloads allow-popups allow-popups-to-escape-sandbox; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'"
+  }
+}
