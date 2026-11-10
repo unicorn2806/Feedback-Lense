@@ -48,7 +48,7 @@ async function scenario({ withoutName = false } = {}) {
     await app.waitForSelector('feedback-lens-ui', { state: 'attached' });
     await app.addScriptTag({
       content: `
-        console.warn('App-Warnung: Token ließ sich nicht still erneuern');
+        console.warn('App-Warnung: Sitzung läuft bald ab');
         console.error('App-Fehler aus dem App-Code');
         fetch('http://localhost:1/nirgends'); // unhandled rejection
         fetch('/api/secret-fail').catch(() => {});

@@ -55,7 +55,7 @@ try {
       { id, msg, frames },
     );
 
-  // --- FR-03: only tabs of the running test run --------------------------------
+  // --- only tabs of the running test run --------------------------------
   const other = await context.newPage();
   await other.goto(OTHER);
   const otherId = await tabId(`${OTHER}*`);
@@ -107,7 +107,7 @@ try {
   check(stored.length === 0, 'Nichts von fremden Seiten gespeichert', String(stored.length));
   await other.close();
 
-  // --- FR-09: screenshot only of the tab that asked for it ------------------------
+  // --- screenshot only of the tab that asked for it ------------------------
   await app.bringToFront();
   const swapped = await sw.evaluate(async ({ appId, OTHER }) => {
     const helper = await chrome.tabs.create({ url: OTHER, active: false });
@@ -142,7 +142,7 @@ try {
   await app.bringToFront();
   await app.waitForTimeout(600); // captureVisibleTab rate limit
 
-  // --- FR-02: redaction --------------------------------------------------------------
+  // --- redaction --------------------------------------------------------------
   const command = (action) =>
     sw.evaluate(async ({ action, appId }) => chrome.tabs.sendMessage(appId, { type: 'fl:command', action }), { action, appId });
   await app.selectOption('#konto', { index: 1 });
@@ -246,7 +246,7 @@ try {
   check(pixels.outside.some((v) => v > 200), 'Rest des Bildes unverändert', JSON.stringify(pixels.outside));
   await send({ type: 'fl:saveSettings', patch: { stripUrlQuery: false } });
 
-  // --- FR-04: hooks off when the run ends, back on when it resumes ---------------------
+  // --- hooks off when the run ends, back on when it resumes ---------------------
   await app.evaluate(() => {
     // the page wraps replaceState itself after us: that wrapper must survive
     const ours = history.replaceState;
