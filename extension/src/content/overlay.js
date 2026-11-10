@@ -1317,6 +1317,12 @@ details.tech summary span { font-weight: 400; color: #64748b; }
   }
 
   /** saved: the form of a parked draft that is continued; showExtra: scroll to that further screenshot. */
+  /** The first field gets the cursor – unless the user has already clicked into the dialog (a slow page delays this). */
+  function focusUnlessBusy(panel, field) {
+    const active = panel.getRootNode().activeElement;
+    if (!active || !panel.contains(active)) field.focus();
+  }
+
   /** Chips for the category and buttons for the priority; a click sets values.category / values.priority. */
   function categoryAndPriority(values) {
     const catChips = C.CATEGORIES.map((cat) => {
@@ -1442,7 +1448,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     shotSection.draw();
     if (saved?.addTo) same.choose?.(saved.addTo);
     if (showExtra >= 0) setTimeout(() => extrasSection?.reveal(showExtra), 60);
-    else setTimeout(() => description.focus(), 30);
+    else setTimeout(() => focusUnlessBusy(panel, description), 30);
 
     const dirty = () => Boolean(title.value.trim() || description.value.trim() || expected.value.trim() || draft.marks.items.length || draft.marks.clicks.some((c) => c.note?.trim()) || draft.extras?.length);
 
@@ -1659,7 +1665,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     drawer = { panel, backdrop, draft };
     root.append(backdrop, panel);
     shotSection.draw();
-    setTimeout(() => description.focus(), 30);
+    setTimeout(() => focusUnlessBusy(panel, description), 30);
 
     for (const field of [title, description]) field.addEventListener('input', () => (errorLine.textContent = ''));
     let copied = null; // { annotation, format } of the last copy
