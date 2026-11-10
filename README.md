@@ -33,13 +33,13 @@ durchklicken & anmerken    ──▶    Repository legen (feedback/)  ──▶ 
 
 > Voraussetzung: ein Chromium-Browser ab Version 116 (Chrome, Edge, Brave, Opera, Vivaldi, Arc).
 
-1. Die Datei `feedback-lens-1.12.0.zip` entpacken.
+1. Die Datei `feedback-lens-1.13.0.zip` entpacken.
 2. Im Browser `chrome://extensions` öffnen (Edge: `edge://extensions`).
 3. Oben rechts den **Entwicklermodus** einschalten.
 4. **„Entpackte Erweiterung laden“** klicken und den entpackten Ordner `extension` auswählen (der Ordner, in dem `manifest.json` liegt).
 5. Über das Puzzle-Symbol in der Browserleiste Feedback Lens **anpinnen**.
 
-Beim Laden zeigt der Browser den Hinweis, dass die Erweiterung „alle Daten auf allen Websites lesen und ändern“ darf. Das ist nötig, damit sie auf *jeder* Webanwendung, die du testen willst, Screenshots machen und die Leiste einblenden kann. Aktiv wird sie aber **nur auf den Domains eines laufenden Testlaufs** – auf allen anderen Seiten lädt sie nichts.
+Beim Laden zeigt der Browser den Hinweis, dass die Erweiterung „alle Daten auf allen Websites lesen und ändern“ darf. Das ist nötig, damit sie auf *jeder* Webanwendung, die du testen willst, Screenshots machen und die Leiste einblenden kann. Aktiv wird sie aber **nur auf den Domains eines laufenden Testlaufs** – auf allen anderen Seiten lädt sie nichts, außer du löst dort ausdrücklich eine [Schnell-Anmerkung](#schnell-anmerkung-eine-beobachtung-direkt-in-den-chat) aus (dann nur in diesem Tab).
 
 Für lokale Dateien (`file://…`) zusätzlich in den Details der Erweiterung **„Zugriff auf Datei-URLs zulassen“** aktivieren.
 
@@ -93,16 +93,41 @@ Mitten im Schreiben noch etwas nachsehen? **„Kurz zur Seite“** unten im Dial
 - *Mehrere Domains* (z. B. separater Login): im Popup „… zum Testlauf hinzufügen“.
 - *Schon angemerkt?* Markierst du ein Element (oder einen fast gleichen Bereich), zu dem es in diesem Testlauf schon eine Anmerkung gibt, zeigt der Dialog sie an. Mit **„Zu #n hinzufügen“** wird dein Text dort als Nachtrag angehängt (der Screenshot als weiteres Bild), statt eine doppelte Anmerkung anzulegen; „Neue Anmerkung“ bleibt möglich, wenn es ein anderes Problem ist. Im Nachtest weist der Dialog auf frühere Anmerkungen an derselben Stelle hin („Zur Nachtest-Liste“).
 - *Nacharbeiten:* Im **Dashboard** lassen sich Texte, Kategorie, Priorität und Status jeder Anmerkung noch ändern, bevor du exportierst.
+- *Sofort teilen:* **„Speichern & kopieren“** (Knopf mit dem Kopier-Symbol neben „Speichern“) speichert die Anmerkung wie gewohnt und legt sie zusätzlich mit Screenshot in die Zwischenablage – siehe [Schnell-Anmerkung](#schnell-anmerkung-eine-beobachtung-direkt-in-den-chat).
 
 | Kürzel | Aktion |
 |---|---|
-| `Alt+Shift+E` | Element markieren |
-| `Alt+Shift+D` | Bereich markieren |
-| `Alt+Shift+S` | Notiz zur ganzen Seite |
+| `Alt+Shift+E` | Element markieren (außerhalb eines Testlaufs: [Schnell-Anmerkung](#schnell-anmerkung-eine-beobachtung-direkt-in-den-chat)) |
+| `Alt+Shift+D` | Bereich markieren (ebenso) |
+| `Alt+Shift+S` | Notiz zur ganzen Seite (ebenso) |
 | `Alt+Shift+F` | Feedback-Lens-Menü öffnen |
 | `↑` / `↓` / `Enter` / `Esc` | Während der Auswahl: umgebendes/inneres Element, übernehmen, abbrechen |
 
 Ändern unter `chrome://extensions/shortcuts` (auf dem Mac entspricht `Alt` der Wahltaste ⌥).
+
+---
+
+## Schnell-Anmerkung: eine Beobachtung direkt in den Chat
+
+Manchmal reicht eine einzelne Beobachtung, ohne Testlauf und Paket – etwa um sie direkt in Claude oder ChatGPT einzufügen und dort zu besprechen.
+
+1. Auf einer beliebigen Seite **`Alt+Shift+E`** (Element), **`Alt+Shift+D`** (Bereich) oder **`Alt+Shift+S`** (ganze Seite) drücken – oder im Popup unter **„Schnell-Anmerkung“** Element, Bereich oder Seite wählen. (Gehört die Seite zum laufenden Testlauf, wird es eine normale Anmerkung.)
+2. Markieren, kurz beschreiben, bei Bedarf im Screenshot zeichnen oder schwärzen.
+3. **„Kopieren“** – Text und Screenshot liegen in der Zwischenablage. Im Chat mit `Strg+V` (Mac: `⌘V`) einfügen.
+
+Der Text ist kurz und enthält, womit sich die Stelle im Code finden lässt: Titel, Seite mit Adresse, Kategorie und Priorität, Beobachtung, Erwartung, Notizen zu den Nummern im Screenshot, betroffenes Element (Selektor, sichtbarer Text, Test-Attribute, Kontrast, Barrierefreiheits-Hinweise), angezeigte Meldungen und Browser/Fenstergröße. Kopiert wird die im Dialog gewählte Ansicht des Screenshots (Ausschnitt oder ganze Ansicht).
+
+**Für wen kopiert wird**, legt das Feld **„Für“** im Dialog fest; den Standard bestimmst du im Dashboard unter *Einstellungen → Schnell-Anmerkung & Kopieren*:
+
+| Ziel | Inhalt der Zwischenablage |
+|---|---|
+| **Claude / ChatGPT** (Standard) | Markdown-Text und Screenshot (PNG) |
+| **Teams / Outlook / Word** | formatierter Text mit dem Screenshot im Text |
+| **Ticket / E-Mail** | schlichter Text ohne Markdown und Screenshot |
+
+Ob ein einziges Einfügen Text *und* Bild übernimmt, entscheidet die Anwendung, in die du einfügst. Kommt nur eines an, nach dem Kopieren **„Nur Text“** bzw. **„Nur Bild“** wählen und die Teile nacheinander einfügen.
+
+Gespeichert wird bei einer Schnell-Anmerkung nichts. Ohne Testlauf zeichnet Feedback Lens vorher nichts auf: Konsolenfehler, fehlgeschlagene Anfragen und Schritte zum Nachstellen gibt es nur im Testlauf. Die Erweiterung wird nur in dem Tab aktiv, in dem du die Schnell-Anmerkung auslöst, und nur bis du kopiert („Fertig“) oder abgebrochen hast.
 
 ---
 
@@ -250,6 +275,7 @@ Weitere Formate im Dashboard unter **„Weitere Formate“**: alle Anmerkungen a
 - URL-Parameter wie `token`, `key`, `password`, `session`, `code`, `email`, `PHPSESSID` werden durch `***` ersetzt, ebenso Tokens und E-Mail-Adressen im Pfad, `;jsessionid=…`, Zugangsdaten (`https://user:pass@…`) und sensible Parameter in weitergeleiteten Adressen (`?redirect=…`). Wahlweise lassen sich **alle URL-Parameter entfernen** (Einstellung; der Nachtest öffnet Seiten dann ohne Parameter).
 - Bei fehlgeschlagenen Anfragen (Status ≥ 400) werden die ersten 300 Zeichen der Server-Antwort (geschwärzt) und eine Request-ID gespeichert – das hilft beim Finden der Ursache (abschaltbar über die Netzwerk-Erfassung).
 - **Nur Tabs des laufenden Testlaufs** dürfen der Erweiterung etwas melden: Anfragen aus anderen Domains, aus eingebetteten Frames oder mit fremder Testlauf-ID werden abgelehnt. Ein Screenshot wird verworfen, wenn währenddessen der Tab gewechselt wurde.
+- **Schnell-Anmerkung:** Außerhalb eines Testlaufs kommt Feedback Lens nur in eine Seite, wenn du es dort per Tastenkürzel oder Menü auslöst; nur dieser Tab darf dann einen Screenshot anfordern, bis du kopiert oder abgebrochen hast (höchstens 30 Minuten). Seitenhaken (Konsole, Netzwerk, Klickpfad) werden dabei nicht eingesetzt, gespeichert wird nichts. Was du kopierst und wo du es einfügst, entscheidest du – Screenshot und Text vorher prüfen (Schwärzen wirkt auch hier).
 - **Beim Beenden eines Testlaufs** stellt Feedback Lens in offenen Tabs die Originalfunktionen der Seite (Konsole, `fetch`, XHR, Verlauf) wieder her und hört auf zu erfassen; beim Fortsetzen wird die Erfassung neu eingerichtet.
 - Im Unternehmen kann die IT per Browser-Richtlinie festlegen, auf welchen Domains die Erweiterung überhaupt arbeiten darf – siehe [UNTERNEHMEN.md](UNTERNEHMEN.md).
 - **Achtung:** Screenshots zeigen, was auf dem Bildschirm war – ggf. auch personenbezogene oder vertrauliche Daten (die automatische Schwärzung wirkt nur auf Texte). Vertrauliches im Bild mit „Schwärzen“ übermalen, am besten mit Testdaten testen und den Export vor der Weitergabe kurz prüfen.
@@ -327,6 +353,7 @@ node test/security.mjs     # Domain-Prüfung, Hooks beim Beenden, Screenshot-Pr�
 node test/marks.mjs        # großer Editor, Klicks als Nummern, Nummern von Hand, Schwärzen, Nachzeichnen im Dashboard, Legende
 node test/shapes.mjs       # Formen und Farben, Umschalt, Auswählen/Verschieben/Umfärben/Entfernen, Rückgängig
 node test/drafts.mjs       # „Kurz zur Seite“: Entwurf über Neuladen, Seitenwechsel, mehrere Entwürfe, zweiter Tab
+node test/quick.mjs        # Schnell-Anmerkung ohne Testlauf: Menü, Markieren, Kopieren (Text + Bild), Formate, Nur Text/Bild, Esc, Freigabe nur für den Tab, „Speichern & kopieren“
 node test/extras.mjs       # mehrere Screenshots: über Seiten hinweg, Reihenfolge, Nachtrag, Einfügen im Dashboard, Export, Sicherung
 node test/duration.mjs     # Testzeit: Abschnitte, Pausen ohne Aktivität, alte Testläufe, Anzeige und Export
 node test/pause.mjs        # Klick neben den Dialog legt ihn zur Seite; Pausieren, Beenden, Fortsetzen im Popup

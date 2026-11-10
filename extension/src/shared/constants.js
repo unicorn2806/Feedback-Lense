@@ -59,7 +59,15 @@ globalThis.FL_CONST = globalThis.FL_CONST || Object.freeze({
     stripUrlQuery: false,
     showPins: true,
     dictationLang: 'de-DE',
+    quickFormat: 'ai', // how a single annotation is copied for a chat (see QUICK_FORMATS)
   }),
+
+  // Copying one annotation (Schnell-Anmerkung, „Speichern & kopieren“): where it is pasted
+  QUICK_FORMATS: Object.freeze([
+    { id: 'ai', label: 'KI-Chat (Claude, ChatGPT)', short: 'Claude / ChatGPT', hint: 'Markdown-Text und Screenshot', where: 'Claude oder ChatGPT' },
+    { id: 'rich', label: 'Teams, Outlook, Word', short: 'Teams / Outlook / Word', hint: 'formatierter Text, Screenshot im Text', where: 'Teams, Outlook oder Word' },
+    { id: 'plain', label: 'Ticket, E-Mail', short: 'Ticket / E-Mail', hint: 'schlichter Text und Screenshot', where: 'das Ticket oder die E-Mail' },
+  ]),
 
   DICTATION_LANGS: Object.freeze([
     { id: 'de-DE', label: 'Deutsch' },

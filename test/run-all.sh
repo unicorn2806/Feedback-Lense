@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 status=0
-for t in redact e2e start hostile popup reload regressions retest dictation security marks selection duplicates testplan duration shapes drafts extras pause attribution report; do
+for t in redact e2e start hostile popup reload regressions retest dictation security marks selection duplicates testplan duration shapes drafts extras pause attribution report quick; do
   echo "=== $t ==="
   node "$t.mjs" || status=1
 done

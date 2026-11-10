@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Feedback Lens – Web-Apps testen & anmerken",
   "short_name": "Feedback Lens",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Web-Apps testen: Probleme direkt am Element anmerken – mit Screenshot und Technik-Kontext als Paket für Claude Code. Alles lokal.",
   "minimum_chrome_version": "116",
   "icons": {

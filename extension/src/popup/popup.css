@@ -74,6 +74,12 @@ details.ctx .input { margin-top: 4px; }
 .action kbd { font-size: 10.5px; font-weight: 500; line-height: 16px; min-width: 20px; padding: 0 4px; text-align: center; }
 .action kbd.sym { font-size: 13px; line-height: 16px; }
 
+.quick { border-top: 1px solid var(--border); padding-top: 10px; }
+.quick h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 8px; }
+.quick h2 span { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 11.5px; }
+.actions.sm .action { padding: 8px 4px; gap: 4px; }
+.actions.sm .action svg { width: 18px; height: 18px; }
+.actions.sm .action .label { font-size: 12.5px; }
 .recent h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 4px 0 6px; }
 .recent ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .recent li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 8px; }

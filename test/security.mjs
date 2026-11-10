@@ -378,6 +378,9 @@ else {
     const start = (url) => ext.evaluate((url) => chrome.runtime.sendMessage({ type: 'fl:startSession', name: 'Richtlinie', url }), url);
     const denied = await start(APP);
     check(denied?.ok === false && /Richtlinie/.test(denied.error), 'Gesperrte Domain: Start mit klarer Meldung abgelehnt', JSON.stringify(denied));
+    const blockedTab = await run.sw.evaluate(async () => (await chrome.tabs.query({})).find((t) => t.url?.startsWith('http://localhost:4176/'))?.id);
+    const quickDenied = await ext.evaluate((tabId) => chrome.runtime.sendMessage({ type: 'fl:quick', action: 'pick', tabId }), blockedTab);
+    check(quickDenied?.ok === false && /Richtlinie/.test(quickDenied.error), 'Gesperrte Domain: auch keine Schnell-Anmerkung', JSON.stringify(quickDenied));
     const ok = await start(OTHER);
     check(ok?.ok === true, 'Freigegebene Domain: Testlauf startet', JSON.stringify(ok));
     await allowed.bringToFront();

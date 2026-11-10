@@ -1,4 +1,4 @@
-# Store-Eintrag – Feedback Lens 1.12.0
+# Store-Eintrag – Feedback Lens 1.13.0
 
 Alle Texte zum Kopieren in das Chrome Web Store Developer Dashboard (und Microsoft Partner Center für Edge). Felder in der Reihenfolge des Dashboards.
 
@@ -6,7 +6,7 @@ Alle Texte zum Kopieren in das Chrome Web Store Developer Dashboard (und Microso
 
 ## 1. Paket
 
-Datei: `feedback-lens-1.12.0-chrome-web-store.zip` (Ordner `dist/`) – `manifest.json` liegt auf oberster Ebene.
+Datei: `feedback-lens-1.13.0-chrome-web-store.zip` (Ordner `dist/`) – `manifest.json` liegt auf oberster Ebene.
 
 ---
 
@@ -34,6 +34,11 @@ ANMERKEN, WO ES PASSIERT
 • Mehrere Screenshots pro Anmerkung – z. B. für einen Ablauf oder dieselbe Stelle auf einer anderen Seite; im Dashboard auch Bilder einfügen (Strg+V)
 • „Kurz zur Seite“: den Dialog parken, in der Anwendung nachsehen und weiterschreiben – der Entwurf übersteht auch Neuladen und Seitenwechsel
 • Diktieren statt tippen – Spracherkennung ausschließlich auf deinem Gerät
+
+SCHNELL-ANMERKUNG FÜR DEN CHAT
+• Ohne Testlauf auf jeder Seite: Element, Bereich oder Seite markieren, kurz beschreiben, „Kopieren“ – Text und Screenshot landen in der Zwischenablage, zum Einfügen in Claude, ChatGPT & Co.
+• Wählbares Ziel: KI-Chat (Markdown), Teams/Outlook/Word (formatiert, Bild im Text) oder Ticket/E-Mail (schlichter Text) – als Standard in den Einstellungen und je Anmerkung
+• Im Testlauf: „Speichern & kopieren“ teilt eine Anmerkung sofort
 
 AUTOMATISCH ERFASST
 • Screenshot mit roter Markierung (Ausschnitt und ganze Ansicht)
@@ -63,7 +68,7 @@ NACHTEST IN DER NEUEN VERSION
 
 ALLES LOKAL
 • Keine Anmeldung, kein Server, kein Tracking: Feedback Lens sendet keine Daten ins Netz.
-• Aktiv nur auf den Domains, für die du einen Testlauf startest.
+• Aktiv nur auf den Domains, für die du einen Testlauf startest – und für eine Schnell-Anmerkung nur in dem Tab, in dem du sie auslöst.
 • Passwörter, Tokens, API-Schlüssel, Kartennummern, IBAN und E-Mail-Adressen werden vor dem Speichern automatisch geschwärzt – in Texten, HTML, Meldungen, Konsole und Fehlerantworten; sensible URL-Parameter werden maskiert. Eingaben in Formularfelder werden nie gespeichert.
 • Im Unternehmen lassen sich die erlaubten Domains per Browser-Richtlinie festlegen.
 • Der Export ist eine ZIP-Datei auf deinem Rechner – du entscheidest, wem du sie gibst.
@@ -162,7 +167,7 @@ Jede Anmerkung enthält Screenshots (bis etwa 1 MB). Ein Testlauf mit vielen Anm
 
 **scripting**
 ```
-Blendet die Feedback-Leiste und die Fehlererfassung (Konsole, fehlgeschlagene Anfragen, Klickpfad) per chrome.scripting.registerContentScripts/executeScript ein – ausschließlich auf den Domains, für die der Nutzer ausdrücklich einen Testlauf gestartet hat. Beim Beenden des Testlaufs werden die Skripte wieder abgemeldet.
+Blendet die Feedback-Leiste und die Fehlererfassung (Konsole, fehlgeschlagene Anfragen, Klickpfad) per chrome.scripting.registerContentScripts/executeScript ein – ausschließlich auf den Domains, für die der Nutzer ausdrücklich einen Testlauf gestartet hat. Beim Beenden des Testlaufs werden die Skripte wieder abgemeldet. Für eine Schnell-Anmerkung (Tastenkürzel oder Menü) wird der Dialog per executeScript in genau den Tab geladen, in dem der Nutzer sie auslöst – ohne Fehlererfassung; er entfernt sich nach dem Kopieren oder Abbrechen wieder.
 ```
 
 **offscreen**
@@ -172,7 +177,7 @@ Lokales Diktat im Anmerkungsdialog: Die Spracherkennung (Web Speech API mit proc
 
 **Host-Berechtigung `<all_urls>`**
 ```
-Feedback Lens testet beliebige Webanwendungen – Staging-, interne oder lokale Umgebungen, deren Adressen vorher nicht bekannt sind. Die Berechtigung wird benötigt, um (1) auf der Domain, für die der Nutzer einen Testlauf startet, die Leiste einzublenden und Fehler zu erfassen, und (2) Screenshots mit chrome.tabs.captureVisibleTab aufzunehmen, wenn der Nutzer in der Leiste auf der Seite „Element markieren“ wählt – activeTab reicht dafür nicht, weil diese Aktion nicht über das Erweiterungssymbol ausgelöst wird. Auf Seiten ohne laufenden Testlauf lädt die Erweiterung nichts; Nachrichten aus Seiten werden nur angenommen, wenn deren Domain zum laufenden Testlauf gehört. Sie macht keine eigenen Netzwerkanfragen und überträgt keine Daten. Unternehmen können die erlaubten Domains über die Richtlinie ExtensionSettings (runtime_allowed_hosts / runtime_blocked_hosts) festlegen.
+Feedback Lens testet beliebige Webanwendungen – Staging-, interne oder lokale Umgebungen, deren Adressen vorher nicht bekannt sind. Die Berechtigung wird benötigt, um (1) auf der Domain, für die der Nutzer einen Testlauf startet, die Leiste einzublenden und Fehler zu erfassen, und (2) Screenshots mit chrome.tabs.captureVisibleTab aufzunehmen, wenn der Nutzer in der Leiste auf der Seite „Element markieren“ wählt – activeTab reicht dafür nicht, weil diese Aktion nicht über das Erweiterungssymbol ausgelöst wird. Auf Seiten ohne laufenden Testlauf lädt die Erweiterung nichts – außer der Nutzer löst dort ausdrücklich eine Schnell-Anmerkung aus (dann nur in diesem Tab und bis sie kopiert oder abgebrochen ist). Nachrichten aus Seiten werden nur angenommen, wenn deren Domain zum laufenden Testlauf gehört bzw. der Tab der gerade ausgelösten Schnell-Anmerkung ist. Sie macht keine eigenen Netzwerkanfragen und überträgt keine Daten. Unternehmen können die erlaubten Domains über die Richtlinie ExtensionSettings (runtime_allowed_hosts / runtime_blocked_hosts) festlegen.
 ```
 
 ### Remote-Code

@@ -31,7 +31,7 @@ async function render() {
   const url = tab?.url || '';
   const injectable = isInjectableUrl(url);
   const tabInSession = active && active.origins.includes(originOf(url));
-  app.replaceChildren(active ? activeView(active, tab, injectable, tabInSession, keys) : startView(tab, injectable, sessions, store[K.templates] || []));
+  app.replaceChildren(active ? activeView(active, tab, injectable, tabInSession, keys) : startView(tab, injectable, sessions, store[K.templates] || [], keys));
 }
 
 /** The most recently paused run (not running): the popup offers to continue it first. */
@@ -100,7 +100,7 @@ function planSelect(templates, origin) {
   return select;
 }
 
-function startView(tab, injectable, sessions, templates = []) {
+function startView(tab, injectable, sessions, templates = [], keys = {}) {
   const url = tab?.url || '';
   const name = h('input.input', { type: 'text', value: injectable ? defaultName(url) : '', 'aria-label': 'Name des Testlaufs' });
   const context = h('textarea', { placeholder: 'z. B. „Interne Kundenverwaltung, Staging. Fokus heute: Anlegen eines neuen Kunden.“', 'aria-label': 'Kontext zum Test' });
@@ -160,6 +160,7 @@ function startView(tab, injectable, sessions, templates = []) {
     paused ? pausedCard(paused) : h('p.muted.small.pad', { text: 'Starte einen Testlauf, klicke dich durch die Anwendung und markiere alles, was besser werden kann. Am Ende exportierst du alles als Paket für die Entwicklung.' }),
     // with a paused run, a new one is the exception: folded away
     paused ? h('details.new-run', null, h('summary', { text: 'Neuen Testlauf starten' }), h('div.stack', { style: { gap: '12px' } }, form)) : form,
+    quickSection(tab, injectable, keys),
     recentList(sessions.filter((s) => s !== paused), tab),
     h('div.foot', null, h('button.btn', { type: 'button', on: { click: () => openDashboard() } }, icon('dashboard'), 'Dashboard')),
   );
@@ -190,26 +191,58 @@ function recentList(sessions, tab) {
   return h('section.recent', null, h('h2', { text: 'Letzte Testläufe' }), h('ul', null, items));
 }
 
-function activeView(active, tab, injectable, tabInSession, keys) {
+/** A large button for marking (element, area, page) with its shortcut as keycaps. */
+function actionButton(name, label, onClick, shortcut, title = label) {
+  const keys = shortcutKeys(shortcut);
+  return h(
+    'button.action',
+    { type: 'button', title: shortcut ? `${title} (${shortcut})` : title, on: { click: onClick } },
+    icon(name, 22),
+    h('span.label', { text: label }),
+    keys.length ? h('span.keys', { 'aria-label': shortcut }, ...keys.map((k) => h(/^[⇧⌥⌘⌃]$/.test(k) ? 'kbd.sym' : 'kbd', { text: k }))) : null,
+  );
+}
+
+/** Schnell-Anmerkung: one annotation straight to the clipboard (for Claude, ChatGPT …), without a test run. */
+function quickSection(tab, injectable, keys) {
   const status = h('div');
-  const run = (action) => async () => {
+  const go = (action) => async () => {
     try {
-      await send('fl:command', { action });
+      await send('fl:quick', { action, tabId: tab.id });
       window.close();
     } catch (err) {
       status.replaceChildren(errorBox(err));
     }
   };
-  const action = (name, label, act, shortcut) => {
-    const keys = shortcutKeys(shortcut);
-    return h(
-      'button.action',
-      { type: 'button', title: shortcut ? `${label} (${shortcut})` : label, on: { click: run(act) } },
-      icon(name, 22),
-      h('span.label', { text: label }),
-      keys.length ? h('span.keys', { 'aria-label': shortcut }, ...keys.map((k) => h(/^[⇧⌥⌘⌃]$/.test(k) ? 'kbd.sym' : 'kbd', { text: k }))) : null,
-    );
+  const tip = 'Schnell-Anmerkung ohne Testlauf: wird nicht gespeichert, sondern mit Screenshot in die Zwischenablage kopiert';
+  return h(
+    'section.quick',
+    null,
+    h('h2', null, 'Schnell-Anmerkung', h('span', { text: 'ohne Testlauf · in die Zwischenablage' })),
+    injectable
+      ? h(
+          'div.actions.sm',
+          null,
+          actionButton('pick', 'Element', go('pick'), keys['pick-element'], `${tip} – Element`),
+          actionButton('region', 'Bereich', go('region'), keys['select-region'], `${tip} – Bereich`),
+          actionButton('note', 'Seite', go('note'), keys['page-note'], `${tip} – ganze Seite`),
+        )
+      : h('p.muted.small', { text: 'Auf dieser Seite nicht möglich (z. B. Browser-Seiten oder der Web Store).' }),
+    status,
+  );
+}
+
+function activeView(active, tab, injectable, tabInSession, keys) {
+  const status = h('div');
+  const run = (act) => async () => {
+    try {
+      await send('fl:command', { action: act });
+      window.close();
+    } catch (err) {
+      status.replaceChildren(errorBox(err));
+    }
   };
+  const action = (name, label, act, shortcut) => actionButton(name, label, run(act), shortcut);
 
   let body;
   if (tabInSession) {
@@ -230,7 +263,7 @@ function activeView(active, tab, injectable, tabInSession, keys) {
         status.replaceChildren(errorBox(err));
       }
     });
-    body = h('div.stack', null, h('div.notice', { text: 'Diese Seite gehört (noch) nicht zum laufenden Testlauf.' }), add);
+    body = h('div.stack', null, h('div.notice', { text: 'Diese Seite gehört (noch) nicht zum laufenden Testlauf.' }), add, quickSection(tab, injectable, keys));
   } else {
     body = h('div.notice', { text: 'Wechsle in einen Tab mit der getesteten Anwendung, um Anmerkungen zu machen.' });
   }

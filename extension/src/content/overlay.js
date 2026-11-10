@@ -11,6 +11,11 @@
   const FROM_PAGE = '__fl_from_page';
   const PROBE = '__fl_probe';
   const ACCENT = '#f43f5e';
+  const Q = globalThis.FL_QUICK;
+  // Schnell-Anmerkung: outside a test run the service worker loads the overlay
+  // on request and names what to start with (pick, region, note).
+  const quickStart = globalThis.FL_QUICK_START;
+  delete globalThis.FL_QUICK_START;
 
   // Replace an older instance (e.g. after the extension was reloaded).
   try {
@@ -34,6 +39,8 @@
     planTarget: null, // checkpoint a finding is being recorded for
     drafts: [], // parked annotations of this run (summaries; the content stays in storage)
     mode: 'idle', // idle | pick | region | busy | dialog
+    quick: false, // Schnell-Anmerkung: one annotation for the clipboard, no test run
+    running: false, // quick: a test run is active (on other domains)
     ui: { x: null, y: null, minimized: false, lastCategory: 'usability', pins: true, retestOpen: false, retestFocus: null, retestDock: 'right', retestCollapsed: false },
     pageEvents: [],
     lastUrl: location.href,
@@ -110,6 +117,7 @@
     aside: 'M5 20h14M12 4v11M7.5 10.5L12 15l4.5-4.5',
     camera: 'M4 8h3l2-3h6l2 3h3v11H4zM12 16.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z',
     draft: 'M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4',
+    copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
   };
 
   function icon(name, size = 18) {
@@ -289,6 +297,24 @@ details.tech summary span { font-weight: 400; color: #64748b; }
 .kv code { font: 11.5px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; }
 .kv .warn { color: #b45309; }
 .d-foot { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
+.btn.save-copy { padding: 8px 10px; }
+.as-addition .save-copy { display: none; }
+.q-intro { margin: 0; padding: 9px 12px; border-radius: 10px; background: #eef2ff; color: #3730a3; font-size: 12.5px; line-height: 1.45; }
+.q-form { display: flex; flex-direction: column; gap: 14px; }
+.q-for { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; margin: 0; }
+.q-format { font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #0f172a; max-width: 190px; }
+.q-done, .q-foot-done, .drawer.quick.copied .q-form, .drawer.quick.copied .q-foot-form { display: none; }
+.drawer.quick.copied .q-done { display: flex; flex-direction: column; gap: 12px; }
+.drawer.quick.copied .q-foot-done { display: flex; }
+.q-ok { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.q-ok b { display: block; font-size: 14px; color: #14532d; }
+.q-ok p { margin: 2px 0 0; font-size: 12.5px; color: #166534; line-height: 1.45; }
+.q-check { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: #16a34a; color: #fff; }
+.q-preview { max-width: 100%; max-height: 260px; align-self: center; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 1px 4px rgba(15,23,42,.12); }
+.q-preview[hidden], .q-row .btn[hidden] { display: none; }
+.q-hint { margin: 0; font-size: 12.5px; color: #475569; line-height: 1.45; }
+.q-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.q-note { margin: 0; min-height: 1em; font-size: 12.5px; color: #166534; }
 .d-foot .grow { flex: 1; font-size: 11.5px; color: #64748b; }
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; font-size: 13px; font-weight: 600; border: 1px solid #cbd5e1; background: #fff; color: #0f172a; }
 .btn:hover { background: #f1f5f9; }
@@ -590,7 +616,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     state.mode = 'pick';
     pick.candidate = null;
     pick.childStack = [];
-    setHint([h('b', { text: 'Element anklicken' }), ...hintParts([['↑', 'Elternelement'], ['↓', 'zurück'], ['Enter', 'übernehmen'], ['Esc', 'abbrechen']])]);
+    setHint([h('b', { text: state.quick ? 'Schnell-Anmerkung: Element anklicken' : 'Element anklicken' }), ...hintParts([['↑', 'Elternelement'], ['↓', 'zurück'], ['Enter', 'übernehmen'], ['Esc', 'abbrechen']])]);
     document.documentElement.style.cursor = 'crosshair';
     bindFrames();
     if (pick.lastPoint) updateCandidate(pick.lastPoint.x, pick.lastPoint.y);
@@ -718,7 +744,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     if (state.mode === 'pick') stopPick();
     closePopover();
     state.mode = 'region';
-    setHint([h('b', { text: 'Bereich aufziehen' }), ...hintParts([['Esc', 'abbrechen']])]);
+    setHint([h('b', { text: state.quick ? 'Schnell-Anmerkung: Bereich aufziehen' : 'Bereich aufziehen' }), ...hintParts([['Esc', 'abbrechen']])]);
     const rectEl = h('div.region-rect', { style: { display: 'none' } });
     const sizeEl = h('span.region-size');
     rectEl.append(sizeEl);
@@ -780,6 +806,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     if (e.key === 'Escape') {
       stopPick();
       state.planTarget = null;
+      idleQuick();
     } else if (e.key === 'Enter' && pick.candidate) confirmPick(pick.candidate);
     else if (e.key === 'ArrowUp' && pick.candidate) {
       const parent = X.parentOf(pick.candidate);
@@ -801,6 +828,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       e.preventDefault();
       e.stopImmediatePropagation();
       stopRegion();
+      idleQuick();
     }
   }, { capture: true });
 
@@ -882,7 +910,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
         draft.element = scrub(X.describeElement(el));
       }
       draft.scroll = [window.scrollX, window.scrollY]; // the rect is in viewport px of this moment
-      const probe = await probePage(kind === 'element' ? el : null);
+      const probe = state.quick ? null : await probePage(kind === 'element' ? el : null); // (no page hooks without a test run)
       draft.probe = probe;
       busy.style.display = 'none';
       hideUi(true);
@@ -918,6 +946,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
         frame: kind !== 'page' && r ? { x: r.x, y: r.y, width: r.width, height: r.height } : null,
       };
       if (waiting) await attachShot(waiting.id, draft);
+      else if (state.quick) openQuickDrawer(draft);
       else openDrawer(draft);
     } catch (err) {
       hideUi(false);
@@ -930,6 +959,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
   function failCapture(err) {
     console.warn('[Feedback Lens]', err);
     toast(err.message || String(err), 'error', 4500);
+    if (state.quick) setTimeout(idleQuick, 4500);
   }
 
   // ---------------------------------------------------------------------------
@@ -1171,6 +1201,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
   const SETUP_STATUSES = ['downloadable', 'not-allowed', 'service-not-allowed'];
 
   function withDictation(field, { inline = false } = {}) {
+    if (state.quick) return inline ? h('div.dict-field', null, field) : field; // dictation belongs to a test run
     const button = h('button.mic', { type: 'button', title: 'Diktieren – Spracherkennung auf diesem Gerät', 'aria-label': 'Diktieren', 'aria-pressed': 'false' }, icon('mic', 16));
     const hintBox = h('div.dict-hint', { role: 'status', style: { display: 'none' } });
     button.addEventListener('mousedown', (e) => e.preventDefault()); // keep the caret in the field
@@ -1286,13 +1317,8 @@ details.tech summary span { font-weight: 400; color: #64748b; }
   }
 
   /** saved: the form of a parked draft that is continued; showExtra: scroll to that further screenshot. */
-  function openDrawer(draft, saved = null, { showExtra = -1 } = {}) {
-    state.mode = 'dialog';
-    updateToolbar(); // e.g. the hint for a further screenshot goes away
-    const rt = draft.retest;
-    const values = { category: saved?.category || state.ui.lastCategory || 'usability', priority: saved?.priority || 'medium', verdict: saved?.verdict || rt?.verdict };
-
-    // --- category & priority
+  /** Chips for the category and buttons for the priority; a click sets values.category / values.priority. */
+  function categoryAndPriority(values) {
     const catChips = C.CATEGORIES.map((cat) => {
       const chip = h('button.chip', { type: 'button', title: cat.hint, style: { '--c': cat.color } }, h('i', { style: { background: cat.color } }), cat.label);
       chip.style.setProperty('--c', cat.color);
@@ -1312,6 +1338,17 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       if (p.id === values.priority) b.classList.add('sel');
       return b;
     });
+    return { catChips, prioButtons };
+  }
+
+  function openDrawer(draft, saved = null, { showExtra = -1 } = {}) {
+    state.mode = 'dialog';
+    updateToolbar(); // e.g. the hint for a further screenshot goes away
+    const rt = draft.retest;
+    const values = { category: saved?.category || state.ui.lastCategory || 'usability', priority: saved?.priority || 'medium', verdict: saved?.verdict || rt?.verdict };
+
+    // --- category & priority
+    const { catChips, prioButtons } = categoryAndPriority(values);
 
     // --- re-test verdict
     const verdictButtons = rt
@@ -1361,6 +1398,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     const tech = buildTechSummary(draft);
 
     const save = h('button.btn.primary', { type: 'button', title: 'Speichern (Strg/⌘ + Enter)' }, icon('check', 16), 'Speichern');
+    const saveCopy = rt ? null : h('button.btn.save-copy', { type: 'button', title: `Speichern und zusätzlich kopieren – Text und Screenshot zum Einfügen in ${Q.formatOf(state.settings.quickFormat).label}`, 'aria-label': 'Speichern & kopieren' }, icon('copy', 16));
     const cancel = h('button.btn', { type: 'button', text: 'Abbrechen' });
     const aside = h('button.btn.ghost.d-aside', { type: 'button', title: 'Den Dialog schließen, ohne etwas zu verlieren: Die Anwendung ist wieder bedienbar, der Entwurf bleibt gespeichert (auch beim Neuladen oder auf anderen Seiten). Weiter geht es über „Entwurf“ in der Leiste.' }, icon('aside', 16), 'Kurz zur Seite');
     const close = h('button.icon-btn', { type: 'button', title: 'Schließen (Esc)', 'aria-label': 'Schließen' }, icon('close'));
@@ -1396,7 +1434,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       { role: 'dialog', 'aria-modal': 'true', 'aria-label': rt ? `Nachtest #${rt.item.number}` : 'Neue Anmerkung' },
       h('div.d-head', null, h('h3', { text: rt ? `Nachtest #${rt.item.number}` : 'Neue Anmerkung' }), h('span.d-target', { title: draft.element?.selector || '', text: targetLabel(draft) }), close),
       body,
-      h('div.d-foot', null, aside, h('div.grow'), cancel, save),
+      h('div.d-foot', null, aside, h('div.grow'), cancel, saveCopy, save),
     );
     const backdrop = h('div.backdrop');
     drawer = { panel, backdrop, draft };
@@ -1469,7 +1507,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       closeDrawer();
     };
 
-    async function doSave() {
+    async function doSave({ copy = false } = {}) {
       if (same.target) return saveAddition(same.target);
       const needsText = rt ? values.verdict === 'changed' : !title.value.trim();
       if (needsText && !description.value.trim()) {
@@ -1489,6 +1527,9 @@ details.tech summary span { font-weight: 400; color: #64748b; }
             ? { category: rt.item.category, priority: rt.item.priority, title: rt.item.title, description: description.value.trim(), expected: '', retest: { number: rt.item.number, verdict: values.verdict } }
             : { category: values.category, priority: values.priority, title: title.value.trim(), description: description.value.trim(), expected: expected.value.trim(), planItem: planSelect?.value || undefined },
         );
+        // copied first: the click that asked for it is still fresh (clipboard access)
+        let copied = '';
+        if (copy) copied = await copyAnnotation(draft, annotation, state.settings.quickFormat).then(() => ' und kopiert', (err) => ` – kopieren fehlgeschlagen: ${err.message}`);
         flush(); // steps recorded so far must be stored before the annotation
         const res = await call('fl:saveAnnotation', { sessionId: state.session.id, annotation, images });
         if (rt) {
@@ -1502,7 +1543,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
         }
         saveUi();
         closeDrawer();
-        toast(rt ? `Nachtest #${res.number}: ${verdictOf(values.verdict).label}` : `Anmerkung #${res.number} gespeichert`);
+        toast(rt ? `Nachtest #${res.number}: ${verdictOf(values.verdict).label}` : `Anmerkung #${res.number} gespeichert${copied}`, copied.startsWith(' –') ? 'error' : 'info', copied ? 4500 : 2600);
       } catch (err) {
         save.disabled = false;
         save.lastChild.textContent = 'Speichern';
@@ -1535,7 +1576,8 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       }
     }
 
-    save.addEventListener('click', doSave);
+    save.addEventListener('click', () => doSave());
+    saveCopy?.addEventListener('click', () => doSave({ copy: true }));
     aside.addEventListener('click', () => park());
     cancel.addEventListener('click', tryClose);
     close.addEventListener('click', tryClose);
@@ -1550,6 +1592,221 @@ details.tech summary span { font-weight: 400; color: #64748b; }
         tryClose();
       }
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Schnell-Anmerkung: the dialog without a test run, and copying for a chat
+  // ---------------------------------------------------------------------------
+
+  /** The same fields as an annotation, but „Kopieren“ instead of „Speichern“ – nothing is stored. */
+  function openQuickDrawer(draft) {
+    state.mode = 'dialog';
+    const values = { category: state.ui.lastCategory || 'usability', priority: 'medium' };
+    const { catChips, prioButtons } = categoryAndPriority(values);
+    const title = h('input', { type: 'text', placeholder: 'Kurzer Titel (optional)', maxlength: '140' });
+    const description = h('textarea', { placeholder: 'Was ist das Problem? Was ist passiert, was stört dich?', rows: '4' });
+    const expected = h('textarea', { placeholder: 'Was hättest du erwartet? Wie könnte es besser sein? (optional)', rows: '3' });
+    const errorLine = h('div.err');
+    const shotSection = buildShotSection(draft, { quick: true });
+    const format = h('select.q-format', { 'aria-label': 'Kopieren für' }, C.QUICK_FORMATS.map((f) => h('option', { value: f.id, text: f.short, title: `${f.label}: ${f.hint}` })));
+    format.value = Q.formatOf(state.settings.quickFormat).id;
+    const copy = h('button.btn.primary', { type: 'button', title: 'In die Zwischenablage kopieren (Strg/⌘ + Enter)' }, icon('copy', 16), 'Kopieren');
+    const cancel = h('button.btn', { type: 'button', text: 'Abbrechen' });
+    const close = h('button.icon-btn', { type: 'button', title: 'Schließen (Esc)', 'aria-label': 'Schließen' }, icon('close'));
+    const intro = h('p.q-intro', { text: `Ohne Testlauf: Nichts wird gespeichert – Text und Screenshot kommen in die Zwischenablage, zum Einfügen in Claude, ChatGPT & Co.${state.running ? ' Diese Seite gehört nicht zum laufenden Testlauf.' : ''}` });
+
+    // after copying: what is on the clipboard, and the parts on their own
+    const paste = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘V' : 'Strg+V';
+    const doneTitle = h('b');
+    const doneText = h('p');
+    const preview = h('img.q-preview', { alt: 'Kopierter Screenshot', hidden: true });
+    const onlyText = h('button.btn', { type: 'button' }, 'Nur Text');
+    const onlyImage = h('button.btn', { type: 'button' }, 'Nur Bild');
+    const doneNote = h('p.q-note', { role: 'status' });
+    const done = h(
+      'div.q-done',
+      null,
+      h('div.q-ok', null, h('span.q-check', null, icon('check', 18)), h('div', null, doneTitle, doneText)),
+      preview,
+      h('p.q-hint', { text: 'Kommt beim Einfügen nur der Text oder nur das Bild an? Dann die Teile einzeln kopieren und nacheinander einfügen:' }),
+      h('div.q-row', null, onlyText, onlyImage),
+      doneNote,
+    );
+    const back = h('button.btn.ghost', { type: 'button', text: 'Bearbeiten' });
+    const finish = h('button.btn.primary', { type: 'button' }, icon('check', 16), 'Fertig');
+
+    const form = h(
+      'div.q-form',
+      null,
+      intro,
+      h('div.field', null, h('div.label', { text: 'Kategorie' }), h('div.chips', null, catChips)),
+      h('div.field', null, h('div.label', { text: 'Priorität' }), h('div.seg', null, prioButtons)),
+      h('div.field', null, h('label', { text: 'Titel' }), title),
+      h('div.field', null, h('label', { text: 'Beschreibung' }), description, errorLine),
+      h('div.field', null, h('label', { text: 'Erwartung / Verbesserungsidee' }), expected),
+      shotSection.el,
+      buildTechSummary(draft, { quick: true }),
+    );
+    const panel = h(
+      'div.drawer.quick',
+      { role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Schnell-Anmerkung' },
+      h('div.d-head', null, h('h3', { text: 'Schnell-Anmerkung' }), h('span.d-target', { title: draft.element?.selector || '', text: targetLabel(draft) }), close),
+      h('div.d-body', null, form, done),
+      h('div.d-foot.q-foot-form', null, h('label.q-for', null, 'Für', format), h('div.grow'), cancel, copy),
+      h('div.d-foot.q-foot-done', null, back, h('div.grow'), finish),
+    );
+    const backdrop = h('div.backdrop');
+    drawer = { panel, backdrop, draft };
+    root.append(backdrop, panel);
+    shotSection.draw();
+    setTimeout(() => description.focus(), 30);
+
+    for (const field of [title, description]) field.addEventListener('input', () => (errorLine.textContent = ''));
+    let copied = null; // { annotation, format } of the last copy
+    const dirty = () => Boolean(title.value.trim() || description.value.trim() || expected.value.trim() || draft.marks.items.length);
+    const closeDrawer = () => {
+      if (preview.src) URL.revokeObjectURL(preview.src);
+      panel.remove();
+      backdrop.remove();
+      drawer = null;
+      draft.bitmap?.close?.();
+      state.mode = 'idle';
+      idleQuick();
+    };
+    const tryClose = () => {
+      if (!copied && dirty() && !panel.dataset.confirm) {
+        panel.dataset.confirm = '1';
+        toast('Noch nicht kopiert – nochmal „Abbrechen“ verwirft die Schnell-Anmerkung.', 'info', 3500);
+        setTimeout(() => delete panel.dataset.confirm, 3000);
+        return;
+      }
+      closeDrawer();
+    };
+
+    async function doCopy() {
+      if (!title.value.trim() && !description.value.trim()) {
+        errorLine.textContent = 'Bitte kurz beschreiben, was dir aufgefallen ist.';
+        description.classList.add('shake');
+        setTimeout(() => description.classList.remove('shake'), 400);
+        description.focus();
+        return;
+      }
+      errorLine.textContent = '';
+      copy.disabled = true;
+      try {
+        const annotation = buildAnnotation(draft, { category: values.category, priority: values.priority, title: title.value.trim(), description: description.value.trim(), expected: expected.value.trim() });
+        const res = await copyAnnotation(draft, annotation, format.value);
+        copied = { annotation, format: format.value };
+        const f = Q.formatOf(format.value);
+        doneTitle.textContent = res.fallback ? 'Text in der Zwischenablage' : 'In der Zwischenablage';
+        doneText.textContent = res.fallback
+          ? 'Den Screenshot durfte der Browser auf dieser Seite nicht mitkopieren: Rechtsklick auf das Bild → „Bild kopieren“.'
+          : `${res.image ? (f.id === 'rich' ? 'Formatierter Text mit Screenshot' : 'Text und Screenshot') : 'Text'} – jetzt in ${f.where} einfügen (${paste}).`;
+        if (preview.src) URL.revokeObjectURL(preview.src);
+        preview.hidden = !res.preview;
+        if (res.preview) preview.src = res.preview;
+        onlyImage.hidden = !res.preview;
+        doneNote.textContent = '';
+        panel.classList.add('copied');
+        finish.focus();
+      } catch (err) {
+        errorLine.textContent = `Kopieren fehlgeschlagen: ${err.message}`;
+      } finally {
+        copy.disabled = false;
+      }
+    }
+    const copyPart = (only, label) => async () => {
+      try {
+        await copyAnnotation(draft, copied.annotation, copied.format, only);
+        doneNote.textContent = `${label} kopiert – jetzt einfügen (${paste}).`;
+      } catch (err) {
+        doneNote.textContent = `Kopieren fehlgeschlagen: ${err.message}`;
+      }
+    };
+
+    copy.addEventListener('click', doCopy);
+    onlyText.addEventListener('click', copyPart('text', 'Text'));
+    onlyImage.addEventListener('click', copyPart('image', 'Bild'));
+    back.addEventListener('click', () => panel.classList.remove('copied'));
+    finish.addEventListener('click', closeDrawer);
+    cancel.addEventListener('click', tryClose);
+    close.addEventListener('click', tryClose);
+    // a click beside the dialog never discards it (there is nowhere to set it aside)
+    backdrop.addEventListener('click', () => toast(copied ? 'Fertig? Dann „Fertig“ – der Dialog schließt sich nicht von allein.' : 'Erst kopieren – oder „Abbrechen“.', 'info', 3000));
+    panel.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !panel.classList.contains('copied')) {
+        e.preventDefault();
+        doCopy();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        tryClose();
+      }
+    });
+  }
+
+  /** PNG for the clipboard (the only image type it takes), at most `max` px on the long edge. */
+  async function toPng(dataUrl, max = 2000) {
+    const bmp = await createImageBitmap(dataUrlToBlob(dataUrl));
+    const k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const canvas = new OffscreenCanvas(Math.max(1, Math.round(bmp.width * k)), Math.max(1, Math.round(bmp.height * k)));
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    return canvas.convertToBlob({ type: 'image/png' });
+  }
+
+  const blobToDataUrl = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+
+  /** When the page forbids the clipboard API (permissions policy): the text at least, the old way. */
+  function copyTextFallback(text) {
+    const area = h('textarea', { style: { position: 'fixed', left: '-9999px', top: '0' } });
+    area.value = text;
+    root.append(area);
+    area.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      /* not allowed either */
+    }
+    area.remove();
+    return ok;
+  }
+
+  /**
+   * Puts an annotation on the clipboard: the text in the chosen format and the
+   * screenshot of the view shown (crop or whole view) – or only one of them
+   * (only: 'text' | 'image'). „rich“ carries the picture inside the HTML.
+   */
+  async function copyAnnotation(draft, annotation, format, only = null) {
+    const finals = draft.bitmap && draft.includeShot ? renderFinalImages(draft) : {};
+    const shot = (draft.marks.view === 'full' ? finals.full : finals.crop) || finals.full || null;
+    const png = shot ? await toPng(shot) : null;
+    const f = Q.formatOf(format).id;
+    const texts = Q.texts(annotation, f, { image: Boolean(png), imageUrl: f === 'rich' && png && only !== 'text' ? await blobToDataUrl(png) : null });
+    const items = {};
+    if (only !== 'image') {
+      items['text/plain'] = new Blob([texts.text], { type: 'text/plain' });
+      if (texts.html && only !== 'text') items['text/html'] = new Blob([texts.html], { type: 'text/html' });
+    }
+    if (png && (only === 'image' || (!only && f !== 'rich'))) items['image/png'] = png;
+    if (!Object.keys(items).length) throw new Error('Kein Screenshot vorhanden.');
+    const preview = png ? URL.createObjectURL(png) : null;
+    try {
+      await navigator.clipboard.write([new ClipboardItem(items)]);
+      return { preview, image: Boolean(items['image/png'] || items['text/html']?.size) && Boolean(png) };
+    } catch (err) {
+      if (only === 'image' || !copyTextFallback(texts.text)) {
+        if (preview) URL.revokeObjectURL(preview);
+        throw err;
+      }
+      return { preview, image: false, fallback: Boolean(png) && only !== 'text' };
+    }
   }
 
   /** Earlier annotations of this run on the same spot: the same element, or (areas) mostly the same area. */
@@ -1624,7 +1881,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     return result;
   }
 
-  function buildShotSection(draft) {
+  function buildShotSection(draft, { quick = false } = {}) {
     if (!draft.bitmap) {
       const el = h('div.field', null, h('div.label', { text: 'Screenshot' }), h('div.shot', null, h('div.noshot', { text: draft.shotError ? `Kein Screenshot möglich: ${draft.shotError}` : 'Kein Screenshot verfügbar.' })));
       return { el, draw() {}, setAddition() {} };
@@ -1660,7 +1917,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     // one field per number – the note travels with its circle
     const notes = M.noteList(ms, { onChange: (structural) => structural && sync(), decorate: (input) => withDictation(input, { inline: true }) });
     const include = h('input', { type: 'checkbox' });
-    const includeText = h('span', { text: 'Screenshot speichern' });
+    const includeText = h('span', { text: quick ? 'Screenshot mitkopieren' : 'Screenshot speichern' });
     include.checked = draft.includeShot !== false;
     if (!include.checked) wrap.style.opacity = '.35';
     include.addEventListener('change', () => {
@@ -1694,7 +1951,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       colors.update();
       if (showClicks) showClicks.checked = ms.showClicks;
       canvas.title = M.hint(ms.tool);
-      note.hidden = !(ms.tool === 'box' && views.length > 1);
+      note.hidden = quick || !(ms.tool === 'box' && views.length > 1); // (quick: only the view shown is copied)
       draw();
     }
     M.attach(canvas, viewOf, ms, draw, () => {
@@ -1718,7 +1975,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     const el = h(
       'div.field',
       null,
-      h('div.label', null, 'Screenshot ', h('small', { text: '– Rahmen, Pfeile, Nummern, Vertrauliches schwärzen' })),
+      h('div.label', null, 'Screenshot ', h('small', { text: quick ? '– kopiert wird die gewählte Ansicht' : '– Rahmen, Pfeile, Nummern, Vertrauliches schwärzen' })),
       h(
         'div.shot',
         null,
@@ -1829,7 +2086,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     };
   }
 
-  function buildTechSummary(draft) {
+  function buildTechSummary(draft, { quick = false } = {}) {
     const rows = [];
     const add = (k, v, cls) => {
       if (v === null || v === undefined || v === '') return;
@@ -1850,8 +2107,11 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     if (comp?.framework) add('Komponente', `${comp.framework}: ${comp.components.slice(0, 3).join(' › ') || '–'}${comp.source ? ` (${comp.source})` : ''}`);
     const errors = draft.techEvents.filter((ev) => ['console', 'error', 'rejection', 'resource'].includes(ev.type)).length;
     const requests = draft.techEvents.filter((ev) => ev.type === 'network' || ev.type === 'slow').length;
-    add('Konsole', errors ? `${errors} Fehler/Warnungen auf dieser Seite` : 'keine Fehler erfasst', errors ? 'warn' : null);
-    add('Netzwerk', requests ? `${requests} fehlgeschlagene/langsame Requests` : 'keine Auffälligkeiten', requests ? 'warn' : null);
+    if (quick) add('Technik', 'Konsole, Netzwerk und Klickpfad werden nur im Testlauf aufgezeichnet');
+    else {
+      add('Konsole', errors ? `${errors} Fehler/Warnungen auf dieser Seite` : 'keine Fehler erfasst', errors ? 'warn' : null);
+      add('Netzwerk', requests ? `${requests} fehlgeschlagene/langsame Requests` : 'keine Auffälligkeiten', requests ? 'warn' : null);
+    }
     const p = draft.page;
     add('Ansicht', `${p.viewport.width}×${p.viewport.height} @${p.dpr}x`);
     const summary = h('summary', null, 'Automatisch erfasster Kontext', h('span', { text: 'für die Entwicklung' }));
@@ -2702,10 +2962,36 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       return;
     }
     if (msg.type !== 'fl:command' || !ready) return;
-    if (state.ui.minimized && msg.action !== 'note') setMinimized(false);
-    if (msg.action === 'pick') state.mode === 'pick' ? stopPick() : startPick();
-    else if (msg.action === 'region') state.mode === 'region' ? stopRegion() : startRegion();
-    else if (msg.action === 'note') startPageNote();
+    runCommand(msg.action);
+  }
+
+  function runCommand(action) {
+    if (!state.quick && state.ui.minimized && action !== 'note') setMinimized(false);
+    if (action === 'pick') state.mode === 'pick' ? stopPick() : startPick();
+    else if (action === 'region') state.mode === 'region' ? stopRegion() : startRegion();
+    else if (action === 'note') startPageNote();
+    idleQuick(); // pressed again: cancelled
+  }
+
+  /** Outside a test run, for one annotation that goes to the clipboard: no toolbar, pins or recording. */
+  function startQuickMode(st) {
+    state.quick = true;
+    state.running = st.running === true;
+    applyState(st);
+    state.ui = { ...state.ui, ...(st.ui || {}) }; // last category, „letzte Klicks einzeichnen“
+    root.append(hl, hlLabel, hint, busy, toastEl);
+    placeHost();
+    rootObserver.observe(document.documentElement, { childList: true });
+    dialogObserver.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['open'] });
+    ready = true;
+    runCommand(quickStart);
+  }
+
+  /** A Schnell-Anmerkung that was cancelled or is done: gone from the page, the screenshot permission ends. */
+  function idleQuick() {
+    if (!state.quick || destroyed || state.mode !== 'idle' || drawer) return;
+    call('fl:quickDone').catch(() => {});
+    destroy();
   }
 
   let refreshTimer = null;
@@ -2723,7 +3009,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
   }
 
   async function refreshState() {
-    if (destroyed) return;
+    if (destroyed || state.quick) return;
     let st;
     try {
       st = await call('fl:getState', { url: location.href });
@@ -2835,7 +3121,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       return destroy();
     }
     if (destroyed) return;
-    if (!st.inSession) return leave();
+    if (!st.inSession) return st.quick && quickStart ? startQuickMode(st) : leave();
     applyState(st);
     state.ui = { ...state.ui, ...(st.ui || {}) };
     root.append(pinsLayer, hl, hlLabel, hint, awaitBar, toolbar, fab, busy, toastEl);
@@ -2850,6 +3136,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     toPage({ kind: 'hello' });
     lastRouteLogged = X.maskUrl(location.href, state.settings.maskSensitiveParams);
     trail({ type: 'page', title: document.title }, true);
+    if (quickStart) runCommand(quickStart); // asked for a Schnell-Anmerkung, but the page belongs to the run
   }
 
   init();

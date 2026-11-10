@@ -6,7 +6,7 @@ Alles, was du hochlädst oder einträgst, liegt in diesem Ordner; die Texte zum 
 
 | Datei | Wofür |
 |---|---|
-| `feedback-lens-1.12.0-chrome-web-store.zip` | das hochzuladende Paket (`manifest.json` auf oberster Ebene) |
+| `feedback-lens-1.13.0-chrome-web-store.zip` | das hochzuladende Paket (`manifest.json` auf oberster Ebene) |
 | `store-eintrag.md` | Beschreibung (DE/EN), Kategorie, Zweck, Begründung jeder Berechtigung, Angaben zur Datennutzung, Hinweise für die Prüfung |
 | `datenschutz.html` | Datenschutzerklärung (DE/EN) – Kontaktdaten eintragen und veröffentlichen |
 | `screenshots/` | 5 Screenshots, 1280×800 |
@@ -27,7 +27,7 @@ Alles, was du hochlädst oder einträgst, liegt in diesem Ordner; die Texte zum 
 
 ## 2. Im Chrome Web Store einreichen
 
-- [ ] **Neues Element** → `feedback-lens-1.12.0-chrome-web-store.zip` hochladen.
+- [ ] **Neues Element** → `feedback-lens-1.13.0-chrome-web-store.zip` hochladen.
 - [ ] **Store-Eintrag:** ausführliche Beschreibung, Kategorie „Entwicklertools“, Sprache Deutsch; 5 Screenshots und die kleine Werbekachel hochladen (große Kachel optional). Texte: `store-eintrag.md`, Abschnitt 2.
 - [ ] **Datenschutz:** einziger Zweck, Begründung für `storage`, `unlimitedStorage`, `scripting`, `offscreen` und die Host-Berechtigung, „Remote-Code: Nein“, Datennutzung ankreuzen, drei Bestätigungen, Adresse der Datenschutzerklärung. Texte: `store-eintrag.md`, Abschnitt 3.
 - [ ] **Vertrieb:** Sichtbarkeit wählen – *Öffentlich*, *Nicht gelistet* (nur per Link; empfohlen fürs eigene Team) oder *Privat*; Regionen; kostenlos.
@@ -44,7 +44,7 @@ Alles, was du hochlädst oder einträgst, liegt in diesem Ordner; die Texte zum 
 ## 4. Später: Updates veröffentlichen
 
 1. Änderungen machen und testen: `bash test/run-all.sh` (Playwright nötig, siehe README).
-2. In `extension/manifest.json` die `version` erhöhen (z. B. `1.12.1` oder `1.13.0`) – der Store akzeptiert nur höhere Versionen.
+2. In `extension/manifest.json` die `version` erhöhen (z. B. `1.13.1` oder `1.14.0`) – der Store akzeptiert nur höhere Versionen.
 3. `python3 tools/package.py` → neues `dist/feedback-lens-<version>-chrome-web-store.zip`.
 4. Im Dashboard beim Element **„Neues Paket hochladen“**, einreichen. Installierte Erweiterungen aktualisieren sich danach automatisch.
 5. Bei sichtbaren Änderungen die Store-Bilder neu erzeugen: `node tools/store-assets.mjs` (schreibt nach `store/`).

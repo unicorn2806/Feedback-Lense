@@ -1,6 +1,6 @@
 # Feedback Lens im Unternehmen: Domains per Richtlinie festlegen
 
-Feedback Lens braucht die Berechtigung „auf allen Websites“, weil es beliebige Anwendungen testen können soll. Aktiv wird es nur auf den Domains eines laufenden Testlaufs, und es prüft bei jeder Anfrage aus einer Seite, ob diese zum Testlauf gehört.
+Feedback Lens braucht die Berechtigung „auf allen Websites“, weil es beliebige Anwendungen testen können soll. Aktiv wird es nur auf den Domains eines laufenden Testlaufs – und für eine Schnell-Anmerkung, die jemand ausdrücklich per Tastenkürzel oder Menü auslöst, nur in diesem einen Tab. Bei jeder Anfrage aus einer Seite prüft es, ob diese dazu gehört.
 
 Wer das zusätzlich **hart begrenzen** will, legt per Browser-Richtlinie fest, auf welchen Domains die Erweiterung überhaupt arbeiten darf. Auf allen anderen Seiten kann sie dann weder Skripte ausführen noch Screenshots machen – auch nicht durch einen Fehler in der Erweiterung oder ein manipuliertes Update. Die Sperre setzt der Browser durch, nicht die Erweiterung.
 

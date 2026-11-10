@@ -1734,6 +1734,11 @@ async function openSettings({ focus = null } = {}) {
     check('stripUrlQuery', 'Alle URL-Parameter entfernen', 'Adressen werden ohne ?… gespeichert – für Anwendungen, die Daten in der Adresse tragen. Der Nachtest öffnet Seiten dann ohne diese Parameter'),
   ];
 
+  // Schnell-Anmerkung and „Speichern & kopieren“: where the copied annotation is pasted by default
+  const quickFormat = h('select.input', { 'aria-label': 'Standard zum Kopieren' }, C.QUICK_FORMATS.map((f) => h('option', { value: f.id, text: `${f.label} – ${f.hint}` })));
+  quickFormat.value = C.QUICK_FORMATS.some((f) => f.id === settings.quickFormat) ? settings.quickFormat : C.DEFAULT_SETTINGS.quickFormat;
+  quickFormat.dataset.key = 'quickFormat';
+
   const shortcuts = h('div.shortcut-list');
   chrome.commands.getAll().then((cmds) => {
     for (const c of cmds) {
@@ -1779,6 +1784,14 @@ async function openSettings({ focus = null } = {}) {
         null,
         h('fieldset', null, h('legend', { text: 'Erfassung während des Tests' }), captureChecks),
         dictationSection(settings),
+        h(
+          'fieldset',
+          { id: 'settings-quick' },
+          h('legend', { text: 'Schnell-Anmerkung & Kopieren' }),
+          h('p.small.muted', { style: { margin: 0 }, text: 'Außerhalb eines Testlaufs starten die Tastenkürzel (oder das Menü) eine Schnell-Anmerkung: markieren, kurz beschreiben, „Kopieren“ – Text und Screenshot landen in der Zwischenablage, gespeichert wird nichts. Im Testlauf kopiert „Speichern & kopieren“ eine Anmerkung zusätzlich.' }),
+          h('label.field', null, 'Standard beim Kopieren', quickFormat),
+          h('p.small.muted', { style: { margin: 0 }, text: 'Im Dialog lässt sich das Ziel für jede Anmerkung auch einzeln wählen.' }),
+        ),
         h('fieldset', null, h('legend', { text: 'Tastenkürzel' }), shortcuts, h('div', null, changeShortcuts)),
         h(
           'fieldset',

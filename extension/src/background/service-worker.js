@@ -8,7 +8,7 @@ import { loadBundle, retestPlan } from '../lib/report.js';
 const K = C.KEYS;
 const S = globalThis.FL_SAN;
 const HOOK_FILES = ['src/content/page-hooks.js'];
-const OVERLAY_FILES = ['src/shared/constants.js', 'src/shared/sanitize.js', 'src/shared/marks.js', 'src/content/context.js', 'src/content/overlay.js'];
+const OVERLAY_FILES = ['src/shared/constants.js', 'src/shared/sanitize.js', 'src/shared/marks.js', 'src/shared/quick.js', 'src/content/context.js', 'src/content/overlay.js'];
 const DASHBOARD = 'src/dashboard/dashboard.html';
 
 // Content scripts run inside the tested (untrusted) pages. They get what they
@@ -1128,9 +1128,52 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
   const target = tab || (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
   if (target && (await tabInSession(target))) {
     await sendCommandToTab(target.id, action);
-  } else if (chrome.action.openPopup) {
-    chrome.action.openPopup().catch(() => {});
+    return;
   }
+  // outside a test run: a Schnell-Anmerkung – or the menu where that is not possible
+  try {
+    await startQuick(target, action);
+  } catch {
+    chrome.action.openPopup?.().catch(() => {});
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Schnell-Anmerkung: one annotation straight to the clipboard, without a test run
+// ---------------------------------------------------------------------------
+
+// Outside a test run the overlay comes into a page only when the user asks for
+// it there (shortcut or menu), and only that tab may then take a screenshot –
+// until the annotation is copied or dismissed, at most 30 minutes. Nothing of
+// it is stored.
+const QUICK = 'fl:quick';
+const QUICK_MS = 30 * 60_000;
+const QUICK_ACTIONS = ['pick', 'region', 'note'];
+
+const quickGrantOf = async () => (await chrome.storage.session.get(QUICK).catch(() => ({})))[QUICK] || null;
+
+async function quickGrant(sender) {
+  const g = await quickGrantOf();
+  return Boolean(g && sender.tab?.id === g.tabId && sender.frameId === 0 && originOf(sender.url || '') === g.origin && Date.now() < g.until);
+}
+
+async function startQuick(tab, action) {
+  if (!tab?.id || !isInjectableUrl(tab.url || '')) throw new Error('Auf dieser Seite ist keine Schnell-Anmerkung möglich (z. B. Browser-Seiten oder der Web Store).');
+  if (!QUICK_ACTIONS.includes(action)) action = 'pick';
+  if (await tabInSession(tab)) return sendCommandToTab(tab.id, action); // part of the test run: a normal annotation
+  await checkFileAccess(tab.url);
+  if (await policyBlocks(tab.id)) throw new Error(POLICY_BLOCKED);
+  await chrome.storage.session.set({ [QUICK]: { tabId: tab.id, origin: originOf(tab.url), until: Date.now() + QUICK_MS } });
+  const alive = await ping(tab.id);
+  if (alive === null) throw new Error('Die Seite reagiert gerade nicht (z. B. wegen eines offenen Dialogs). Bitte gleich noch einmal versuchen.');
+  if (alive) return chrome.tabs.sendMessage(tab.id, { type: 'fl:command', action }).catch(() => {});
+  const target = { tabId: tab.id };
+  await chrome.scripting.executeScript({ target, func: (a) => (globalThis.FL_QUICK_START = a), args: [action] });
+  await chrome.scripting.executeScript({ target, files: OVERLAY_FILES });
+}
+
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  if ((await quickGrantOf())?.tabId === tabId) await chrome.storage.session.remove(QUICK).catch(() => {});
 });
 
 // ---------------------------------------------------------------------------
@@ -1177,7 +1220,8 @@ const handlers = {
       const drafts = inSession ? await get(K.drafts(active.id), []) : [];
       const shortcuts = {};
       for (const cmd of await chrome.commands.getAll()) shortcuts[cmd.name] = cmd.shortcut || '';
-      return { session: active, inSession, settings, annotations, plan, testPlan, drafts, shortcuts, ui: await get(K.ui, {}) };
+      const quick = !trusted && !inSession && (await quickGrant(sender));
+      return { session: inSession || trusted ? active : null, inSession, quick, running: Boolean(quick && active), settings, annotations, plan, testPlan, drafts, shortcuts, ui: await get(K.ui, {}) };
     },
   },
   'fl:saveAnnotation': { page: 'scoped', run: (msg, sender, trusted, scope) => saveAnnotation({ ...msg, sessionId: scope?.id ?? msg.sessionId }) },
@@ -1209,12 +1253,23 @@ const handlers = {
   },
   'fl:capture': {
     page: 'scoped',
+    quick: true, // also the tab of a Schnell-Anmerkung
     run: (msg, sender) => {
       if (!sender.tab) throw new Error('Screenshot nur aus einem Tab möglich.');
       return captureTab(sender.tab);
     },
   },
   'fl:saveUi': { page: 'scoped', run: (msg) => saveUi(msg.patch || {}) },
+  'fl:quickDone': {
+    page: 'scoped',
+    quick: true,
+    run: async (msg, sender) => {
+      if (!(await quickGrant(sender))) return; // only the tab's own permission
+      await chrome.storage.session.remove(QUICK);
+      // a test run was started for this page meanwhile: now it gets the test run's overlay
+      if (await tabInSession(sender.tab)) setTimeout(() => injectIntoTab(sender.tab.id), 300);
+    },
+  },
   'fl:openDashboard': {
     page: 'scoped',
     // from a page: its own run only, and never an export
@@ -1231,6 +1286,7 @@ const handlers = {
     },
   },
   'fl:startSession': { run: (msg) => startSession(msg) },
+  'fl:quick': { run: async (msg) => startQuick(await chrome.tabs.get(Number(msg.tabId)).catch(() => null), msg.action) },
   'fl:startRetest': { run: (msg) => startRetest(msg) },
   'fl:applyDevResults': { run: (msg) => applyDevResults(msg) },
   'fl:updateImages': { run: (msg) => updateImages(msg) },
@@ -1271,6 +1327,7 @@ const handlers = {
         if (typeof def === 'boolean') patch[key] = v === true;
         else if (typeof def === 'number') patch[key] = Number.isFinite(Number(v)) ? Number(v) : def;
         else if (key === 'dictationLang') patch[key] = C.DICTATION_LANGS.some((l) => l.id === v) ? v : def;
+        else if (key === 'quickFormat') patch[key] = C.QUICK_FORMATS.some((f) => f.id === v) ? v : def;
         else patch[key] = S.str(v, 300) ?? def;
       }
       await locked(async () => set({ [K.settings]: { ...(await get(K.settings, {})), ...patch } }));
@@ -1291,7 +1348,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   Promise.resolve()
     .then(async () => {
-      const scope = !trusted && handler.page === 'scoped' ? await pageScope(sender, msg, handler) : null;
+      const scope = !trusted && handler.page === 'scoped' ? (handler.quick && (await quickGrant(sender)) ? { quick: true } : await pageScope(sender, msg, handler)) : null;
       return handler.run(msg, sender, trusted, scope);
     })
     .then(
