@@ -64,7 +64,8 @@ globalThis.FL_CONST = globalThis.FL_CONST || Object.freeze({
 
   // Copying one annotation (Schnell-Anmerkung, „Speichern & kopieren“): where it is pasted
   QUICK_FORMATS: Object.freeze([
-    { id: 'ai', label: 'KI-Chat (Claude, ChatGPT)', short: 'Claude / ChatGPT', hint: 'Markdown-Text und Screenshot', where: 'Claude oder ChatGPT' },
+    { id: 'ai', label: 'KI-Chat (Claude, ChatGPT) – ein Bild', short: 'Claude / ChatGPT', hint: 'Screenshot und alle Angaben in einem Bild – ein Einfügen genügt', where: 'Claude oder ChatGPT', card: true },
+    { id: 'ai-text', label: 'KI-Chat – Text und Bild getrennt', short: 'KI-Chat: Text + Bild', hint: 'Markdown-Text und Screenshot (je nach Chat zweimal einfügen)', where: 'den Chat' },
     { id: 'rich', label: 'Teams, Outlook, Word', short: 'Teams / Outlook / Word', hint: 'formatierter Text, Screenshot im Text', where: 'Teams, Outlook oder Word' },
     { id: 'plain', label: 'Ticket, E-Mail', short: 'Ticket / E-Mail', hint: 'schlichter Text und Screenshot', where: 'das Ticket oder die E-Mail' },
   ]),

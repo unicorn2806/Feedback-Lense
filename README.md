@@ -33,7 +33,7 @@ durchklicken & anmerken    ──▶    Repository legen (feedback/)  ──▶ 
 
 > Voraussetzung: ein Chromium-Browser ab Version 116 (Chrome, Edge, Brave, Opera, Vivaldi, Arc).
 
-1. Die Datei `feedback-lens-1.13.0.zip` entpacken.
+1. Die Datei `feedback-lens-1.14.0.zip` entpacken.
 2. Im Browser `chrome://extensions` öffnen (Edge: `edge://extensions`).
 3. Oben rechts den **Entwicklermodus** einschalten.
 4. **„Entpackte Erweiterung laden“** klicken und den entpackten Ordner `extension` auswählen (der Ordner, in dem `manifest.json` liegt).
@@ -113,19 +113,20 @@ Manchmal reicht eine einzelne Beobachtung, ohne Testlauf und Paket – etwa um s
 
 1. Auf einer beliebigen Seite **`Alt+Shift+E`** (Element), **`Alt+Shift+D`** (Bereich) oder **`Alt+Shift+S`** (ganze Seite) drücken – oder im Popup unter **„Schnell-Anmerkung“** Element, Bereich oder Seite wählen. (Gehört die Seite zum laufenden Testlauf, wird es eine normale Anmerkung.)
 2. Markieren, kurz beschreiben, bei Bedarf im Screenshot zeichnen oder schwärzen.
-3. **„Kopieren“** – Text und Screenshot liegen in der Zwischenablage. Im Chat mit `Strg+V` (Mac: `⌘V`) einfügen.
+3. **„Kopieren“** – im Chat mit `Strg+V` (Mac: `⌘V`) einfügen.
 
-Der Text ist kurz und enthält, womit sich die Stelle im Code finden lässt: Titel, Seite mit Adresse, Kategorie und Priorität, Beobachtung, Erwartung, Notizen zu den Nummern im Screenshot, betroffenes Element (Selektor, sichtbarer Text, Test-Attribute, Kontrast, Barrierefreiheits-Hinweise), angezeigte Meldungen und Browser/Fenstergröße. Kopiert wird die im Dialog gewählte Ansicht des Screenshots (Ausschnitt oder ganze Ansicht).
+Chats übernehmen beim Einfügen entweder Text *oder* ein Bild. Für Claude und ChatGPT legt Feedback Lens deshalb **ein einziges Bild** in die Zwischenablage: oben Titel, Seite und Adresse, dann der Screenshot, darunter Beobachtung, Erwartung, Notizen zu den Nummern im Screenshot, das betroffene Element (Selektor, sichtbarer Text, Test-Attribute, Kontrast, Barrierefreiheits-Hinweise), angezeigte Meldungen und Browser/Fenstergröße. Beide lesen Text in Bildern zuverlässig; das Bild ist 1000 px breit, damit die Chats es kaum verkleinern. Wer den Text zum Weiterverwenden braucht (z. B. den Selektor), kopiert ihn danach mit **„Nur Text“**; **„Nur Screenshot“** kopiert den Screenshot ohne Angaben. Verwendet wird die im Dialog gewählte Ansicht des Screenshots (Ausschnitt oder ganze Ansicht).
 
 **Für wen kopiert wird**, legt das Feld **„Für“** im Dialog fest; den Standard bestimmst du im Dashboard unter *Einstellungen → Schnell-Anmerkung & Kopieren*:
 
 | Ziel | Inhalt der Zwischenablage |
 |---|---|
-| **Claude / ChatGPT** (Standard) | Markdown-Text und Screenshot (PNG) |
+| **Claude / ChatGPT** (Standard) | ein Bild mit Screenshot und allen Angaben – ein Einfügen genügt |
+| **KI-Chat: Text + Bild** | Markdown-Text und Screenshot getrennt (je nach Chat zweimal einfügen: „Nur Text“, „Nur Bild“) |
 | **Teams / Outlook / Word** | formatierter Text mit dem Screenshot im Text |
 | **Ticket / E-Mail** | schlichter Text ohne Markdown und Screenshot |
 
-Ob ein einziges Einfügen Text *und* Bild übernimmt, entscheidet die Anwendung, in die du einfügst. Kommt nur eines an, nach dem Kopieren **„Nur Text“** bzw. **„Nur Bild“** wählen und die Teile nacheinander einfügen.
+Eine ZIP-Datei oder andere Dateien kann ein Browser nicht in die Zwischenablage legen – nur Text, formatierten Text und PNG-Bilder.
 
 Gespeichert wird bei einer Schnell-Anmerkung nichts. Ohne Testlauf zeichnet Feedback Lens vorher nichts auf: Konsolenfehler, fehlgeschlagene Anfragen und Schritte zum Nachstellen gibt es nur im Testlauf. Die Erweiterung wird nur in dem Tab aktiv, in dem du die Schnell-Anmerkung auslöst, und nur bis du kopiert („Fertig“) oder abgebrochen hast.
 
@@ -353,7 +354,7 @@ node test/security.mjs     # Domain-Prüfung, Hooks beim Beenden, Screenshot-Pr�
 node test/marks.mjs        # großer Editor, Klicks als Nummern, Nummern von Hand, Schwärzen, Nachzeichnen im Dashboard, Legende
 node test/shapes.mjs       # Formen und Farben, Umschalt, Auswählen/Verschieben/Umfärben/Entfernen, Rückgängig
 node test/drafts.mjs       # „Kurz zur Seite“: Entwurf über Neuladen, Seitenwechsel, mehrere Entwürfe, zweiter Tab
-node test/quick.mjs        # Schnell-Anmerkung ohne Testlauf: Menü, Markieren, Kopieren (Text + Bild), Formate, Nur Text/Bild, Esc, Freigabe nur für den Tab, „Speichern & kopieren“
+node test/quick.mjs        # Schnell-Anmerkung ohne Testlauf: Menü, Markieren, Kopieren als ein Bild, Nur Text/Screenshot, Formate, Esc, Freigabe nur für den Tab, „Speichern & kopieren“
 node test/extras.mjs       # mehrere Screenshots: über Seiten hinweg, Reihenfolge, Nachtrag, Einfügen im Dashboard, Export, Sicherung
 node test/duration.mjs     # Testzeit: Abschnitte, Pausen ohne Aktivität, alte Testläufe, Anzeige und Export
 node test/pause.mjs        # Klick neben den Dialog legt ihn zur Seite; Pausieren, Beenden, Fortsetzen im Popup

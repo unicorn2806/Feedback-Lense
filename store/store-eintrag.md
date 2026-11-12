@@ -1,4 +1,4 @@
-# Store-Eintrag – Feedback Lens 1.13.0
+# Store-Eintrag – Feedback Lens 1.14.0
 
 Alle Texte zum Kopieren in das Chrome Web Store Developer Dashboard (und Microsoft Partner Center für Edge). Felder in der Reihenfolge des Dashboards.
 
@@ -6,7 +6,7 @@ Alle Texte zum Kopieren in das Chrome Web Store Developer Dashboard (und Microso
 
 ## 1. Paket
 
-Datei: `feedback-lens-1.13.0-chrome-web-store.zip` (Ordner `dist/`) – `manifest.json` liegt auf oberster Ebene.
+Datei: `feedback-lens-1.14.0-chrome-web-store.zip` (Ordner `dist/`) – `manifest.json` liegt auf oberster Ebene.
 
 ---
 
@@ -36,8 +36,9 @@ ANMERKEN, WO ES PASSIERT
 • Diktieren statt tippen – Spracherkennung ausschließlich auf deinem Gerät
 
 SCHNELL-ANMERKUNG FÜR DEN CHAT
-• Ohne Testlauf auf jeder Seite: Element, Bereich oder Seite markieren, kurz beschreiben, „Kopieren“ – Text und Screenshot landen in der Zwischenablage, zum Einfügen in Claude, ChatGPT & Co.
-• Wählbares Ziel: KI-Chat (Markdown), Teams/Outlook/Word (formatiert, Bild im Text) oder Ticket/E-Mail (schlichter Text) – als Standard in den Einstellungen und je Anmerkung
+• Ohne Testlauf auf jeder Seite: Element, Bereich oder Seite markieren, kurz beschreiben, „Kopieren“ – zum Einfügen in Claude, ChatGPT & Co.
+• Für KI-Chats ein einziges Bild mit Screenshot und allen Angaben (Seite, Beobachtung, Erwartung, Selektor, Kontrast) – ein Einfügen genügt
+• Weitere Ziele: Text und Bild getrennt, Teams/Outlook/Word (formatiert, Bild im Text) oder Ticket/E-Mail (schlichter Text) – als Standard in den Einstellungen und je Anmerkung
 • Im Testlauf: „Speichern & kopieren“ teilt eine Anmerkung sofort
 
 AUTOMATISCH ERFASST

@@ -1788,7 +1788,7 @@ async function openSettings({ focus = null } = {}) {
           'fieldset',
           { id: 'settings-quick' },
           h('legend', { text: 'Schnell-Anmerkung & Kopieren' }),
-          h('p.small.muted', { style: { margin: 0 }, text: 'Außerhalb eines Testlaufs starten die Tastenkürzel (oder das Menü) eine Schnell-Anmerkung: markieren, kurz beschreiben, „Kopieren“ – Text und Screenshot landen in der Zwischenablage, gespeichert wird nichts. Im Testlauf kopiert „Speichern & kopieren“ eine Anmerkung zusätzlich.' }),
+          h('p.small.muted', { style: { margin: 0 }, text: 'Außerhalb eines Testlaufs starten die Tastenkürzel (oder das Menü) eine Schnell-Anmerkung: markieren, kurz beschreiben, „Kopieren“ – gespeichert wird nichts. Im Testlauf kopiert „Speichern & kopieren“ eine Anmerkung zusätzlich. Für Claude und ChatGPT wird daraus ein einziges Bild mit Screenshot und allen Angaben, weil Chats beim Einfügen nur Text oder nur ein Bild übernehmen.' }),
           h('label.field', null, 'Standard beim Kopieren', quickFormat),
           h('p.small.muted', { style: { margin: 0 }, text: 'Im Dialog lässt sich das Ziel für jede Anmerkung auch einzeln wählen.' }),
         ),

@@ -302,7 +302,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
 .q-intro { margin: 0; padding: 9px 12px; border-radius: 10px; background: #eef2ff; color: #3730a3; font-size: 12.5px; line-height: 1.45; }
 .q-form { display: flex; flex-direction: column; gap: 14px; }
 .q-for { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #475569; margin: 0; }
-.q-format { font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #0f172a; max-width: 190px; }
+.q-format { font: inherit; font-size: 12.5px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #0f172a; max-width: 210px; }
 .q-done, .q-foot-done, .drawer.quick.copied .q-form, .drawer.quick.copied .q-foot-form { display: none; }
 .drawer.quick.copied .q-done { display: flex; flex-direction: column; gap: 12px; }
 .drawer.quick.copied .q-foot-done { display: flex; }
@@ -1404,7 +1404,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     const tech = buildTechSummary(draft);
 
     const save = h('button.btn.primary', { type: 'button', title: 'Speichern (Strg/⌘ + Enter)' }, icon('check', 16), 'Speichern');
-    const saveCopy = rt ? null : h('button.btn.save-copy', { type: 'button', title: `Speichern und zusätzlich kopieren – Text und Screenshot zum Einfügen in ${Q.formatOf(state.settings.quickFormat).label}`, 'aria-label': 'Speichern & kopieren' }, icon('copy', 16));
+    const saveCopy = rt ? null : h('button.btn.save-copy', { type: 'button', title: `Speichern und zusätzlich kopieren – zum Einfügen in ${Q.formatOf(state.settings.quickFormat).where} (${Q.formatOf(state.settings.quickFormat).hint})`, 'aria-label': 'Speichern & kopieren' }, icon('copy', 16));
     const cancel = h('button.btn', { type: 'button', text: 'Abbrechen' });
     const aside = h('button.btn.ghost.d-aside', { type: 'button', title: 'Den Dialog schließen, ohne etwas zu verlieren: Die Anwendung ist wieder bedienbar, der Entwurf bleibt gespeichert (auch beim Neuladen oder auf anderen Seiten). Weiter geht es über „Entwurf“ in der Leiste.' }, icon('aside', 16), 'Kurz zur Seite');
     const close = h('button.icon-btn', { type: 'button', title: 'Schließen (Esc)', 'aria-label': 'Schließen' }, icon('close'));
@@ -1619,7 +1619,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     const copy = h('button.btn.primary', { type: 'button', title: 'In die Zwischenablage kopieren (Strg/⌘ + Enter)' }, icon('copy', 16), 'Kopieren');
     const cancel = h('button.btn', { type: 'button', text: 'Abbrechen' });
     const close = h('button.icon-btn', { type: 'button', title: 'Schließen (Esc)', 'aria-label': 'Schließen' }, icon('close'));
-    const intro = h('p.q-intro', { text: `Ohne Testlauf: Nichts wird gespeichert – Text und Screenshot kommen in die Zwischenablage, zum Einfügen in Claude, ChatGPT & Co.${state.running ? ' Diese Seite gehört nicht zum laufenden Testlauf.' : ''}` });
+    const intro = h('p.q-intro', { text: `Ohne Testlauf: Nichts wird gespeichert – „Kopieren“ legt die Anmerkung mit Screenshot in die Zwischenablage, zum Einfügen in Claude, ChatGPT & Co.${state.running ? ' Diese Seite gehört nicht zum laufenden Testlauf.' : ''}` });
 
     // after copying: what is on the clipboard, and the parts on their own
     const paste = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘V' : 'Strg+V';
@@ -1628,13 +1628,14 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     const preview = h('img.q-preview', { alt: 'Kopierter Screenshot', hidden: true });
     const onlyText = h('button.btn', { type: 'button' }, 'Nur Text');
     const onlyImage = h('button.btn', { type: 'button' }, 'Nur Bild');
+    const doneHint = h('p.q-hint');
     const doneNote = h('p.q-note', { role: 'status' });
     const done = h(
       'div.q-done',
       null,
       h('div.q-ok', null, h('span.q-check', null, icon('check', 18)), h('div', null, doneTitle, doneText)),
       preview,
-      h('p.q-hint', { text: 'Kommt beim Einfügen nur der Text oder nur das Bild an? Dann die Teile einzeln kopieren und nacheinander einfügen:' }),
+      doneHint,
       h('div.q-row', null, onlyText, onlyImage),
       doneNote,
     );
@@ -1706,12 +1707,18 @@ details.tech summary span { font-weight: 400; color: #64748b; }
         const f = Q.formatOf(format.value);
         doneTitle.textContent = res.fallback ? 'Text in der Zwischenablage' : 'In der Zwischenablage';
         doneText.textContent = res.fallback
-          ? 'Den Screenshot durfte der Browser auf dieser Seite nicht mitkopieren: Rechtsklick auf das Bild → „Bild kopieren“.'
-          : `${res.image ? (f.id === 'rich' ? 'Formatierter Text mit Screenshot' : 'Text und Screenshot') : 'Text'} – jetzt in ${f.where} einfügen (${paste}).`;
+          ? `Das Bild durfte der Browser auf dieser Seite nicht kopieren: Rechtsklick auf das Bild → „Bild kopieren“.`
+          : res.card
+            ? `Ein Bild mit Screenshot und allen Angaben – jetzt in ${f.where} einfügen (${paste}).`
+            : `${res.image ? (f.id === 'rich' ? 'Formatierter Text mit Screenshot' : 'Text und Screenshot') : 'Text'} – jetzt in ${f.where} einfügen (${paste}).`;
+        doneHint.textContent = res.card
+          ? 'Den Text zum Weiterverwenden (z. B. den Selektor) oder nur den Screenshot gibt es hier einzeln:'
+          : 'Kommt beim Einfügen nur der Text oder nur das Bild an? Dann die Teile einzeln kopieren und nacheinander einfügen:';
+        onlyImage.textContent = res.card ? 'Nur Screenshot' : 'Nur Bild';
         if (preview.src) URL.revokeObjectURL(preview.src);
         preview.hidden = !res.preview;
         if (res.preview) preview.src = res.preview;
-        onlyImage.hidden = !res.preview;
+        onlyImage.hidden = !draft.bitmap || !draft.includeShot;
         doneNote.textContent = '';
         panel.classList.add('copied');
         finish.focus();
@@ -1732,7 +1739,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
 
     copy.addEventListener('click', doCopy);
     onlyText.addEventListener('click', copyPart('text', 'Text'));
-    onlyImage.addEventListener('click', copyPart('image', 'Bild'));
+    onlyImage.addEventListener('click', () => copyPart('image', onlyImage.textContent.replace(/^Nur /, ''))());
     back.addEventListener('click', () => panel.classList.remove('copied'));
     finish.addEventListener('click', closeDrawer);
     cancel.addEventListener('click', tryClose);
@@ -1796,6 +1803,21 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     const f = Q.formatOf(format).id;
     const texts = Q.texts(annotation, f, { image: Boolean(png), imageUrl: f === 'rich' && png && only !== 'text' ? await blobToDataUrl(png) : null });
     const items = {};
+    if (Q.formatOf(f).card && !only) {
+      // one picture with the screenshot and everything written down: one paste is enough
+      const picture = await Q.card(annotation, png);
+      const preview = URL.createObjectURL(picture);
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': picture })]);
+        return { preview, image: true, card: true };
+      } catch (err) {
+        if (!copyTextFallback(texts.text)) {
+          URL.revokeObjectURL(preview);
+          throw err;
+        }
+        return { preview, image: false, card: true, fallback: true };
+      }
+    }
     if (only !== 'image') {
       items['text/plain'] = new Blob([texts.text], { type: 'text/plain' });
       if (texts.html && only !== 'text') items['text/html'] = new Blob([texts.html], { type: 'text/html' });

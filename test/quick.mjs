@@ -1,7 +1,7 @@
 // Schnell-Anmerkung: without a test run, mark something, describe it and copy
 // text + screenshot for a chat (Claude, ChatGPT) – nothing is stored, the
 // overlay and its screenshot permission end with it. Other formats (Teams/
-// Outlook, ticket), „Nur Text“ / „Nur Bild“, Esc, a page outside a running
+// Outlook, ticket), „Nur Text“ / „Nur Screenshot“, Esc, a page outside a running
 // test run, and „Speichern & kopieren“ inside a test run.
 import { startServer } from './server.mjs';
 import { launch } from './launch.mjs';
@@ -42,10 +42,16 @@ try {
     window.close = () => (window.__closed = true);
   }, APP);
   const openPopup = async (target = APP) => {
+    await popup.setViewportSize({ width: 360, height: 640 });
     await popup.goto(extUrl('src/popup/popup.html'));
     await popup.evaluate((url) => (window.__target = url), target);
     await popup.reload();
     await popup.locator('section.quick').waitFor();
+  };
+  /** A button of the menu's Schnell-Anmerkung; afterwards the window has its size again (headless: one shared window, captureVisibleTab takes its size). */
+  const quickFromPopup = async (label) => {
+    await popup.locator('section.quick .action', { hasText: label }).click();
+    await popup.setViewportSize({ width: 1280, height: 860 });
   };
   const storage = () => sw.evaluate(() => chrome.storage.local.get(null));
   const grant = () => sw.evaluate(async () => (await chrome.storage.session.get('fl:quick'))['fl:quick'] || null);
@@ -67,7 +73,10 @@ try {
           if (type === 'text/html') out.html = await blob.text();
           if (type === 'image/png') {
             const bmp = await createImageBitmap(blob);
-            out.image = { w: bmp.width, h: bmp.height };
+            const bytes = new Uint8Array(await blob.arrayBuffer());
+            let bin = '';
+            for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+            out.image = { w: bmp.width, h: bmp.height, png: btoa(bin) };
           }
         }
       }
@@ -83,7 +92,7 @@ try {
   await popup.screenshot({ path: join(OUT, 'quick-1-menu.png') });
 
   // --- element → describe → copy -----------------------------------------------------------
-  await popup.locator('section.quick .action', { hasText: 'Element' }).click();
+  await quickFromPopup('Element');
   await popup.waitForFunction(() => window.__closed === true);
   await app.bringToFront();
   await app.waitForSelector('feedback-lens-ui', { state: 'attached' });
@@ -99,6 +108,7 @@ try {
   check((await drawer.locator('.d-head h3').textContent()) === 'Schnell-Anmerkung' && (await drawer.locator('.q-intro').textContent()).includes('Nichts wird gespeichert'), 'Dialog „Schnell-Anmerkung“: nichts wird gespeichert');
   check((await drawer.locator('.q-format').inputValue()) === 'ai' && (await drawer.locator('.q-format option:checked').textContent()) === 'Claude / ChatGPT' && (await drawer.locator('.q-foot-form .btn.primary').textContent()).includes('Kopieren'), 'Standard: KI-Chat, Knopf „Kopieren“');
   check((await drawer.locator('details.tech').textContent()).includes('nur im Testlauf aufgezeichnet'), 'Kontext sagt: Konsole/Netzwerk nur im Testlauf');
+  check((await drawer.locator('.shot-foot').textContent()).includes('1280×860 px'), 'Screenshot der ganzen Ansicht (1280×860)', await drawer.locator('.shot-foot').textContent());
   await drawer.locator('.q-foot-form .btn.primary').click();
   check((await drawer.locator('.err').textContent()).includes('Bitte kurz beschreiben'), 'Ohne Beschreibung: Hinweis statt Kopieren');
   await drawer.locator('.chip', { hasText: 'Barrierefreiheit' }).click();
@@ -109,12 +119,18 @@ try {
   await app.screenshot({ path: join(OUT, 'quick-2-dialog.png') });
   await drawer.locator('.q-foot-form .btn.primary').click();
   await drawer.locator('.q-done').waitFor();
-  check((await drawer.locator('.q-ok').textContent()).includes('Text und Screenshot – jetzt in Claude oder ChatGPT einfügen'), 'Bestätigung: Text und Screenshot, in Claude oder ChatGPT einfügen', await drawer.locator('.q-ok').textContent());
-  check(await drawer.locator('img.q-preview').isVisible(), 'Vorschau des kopierten Screenshots');
+  check((await drawer.locator('.q-ok').textContent()).includes('Ein Bild mit Screenshot und allen Angaben – jetzt in Claude oder ChatGPT einfügen'), 'Bestätigung: ein Bild mit allen Angaben, in Claude oder ChatGPT einfügen', await drawer.locator('.q-ok').textContent());
+  check(await drawer.locator('img.q-preview').isVisible(), 'Vorschau des kopierten Bildes');
   await app.screenshot({ path: join(OUT, 'quick-3-copied.png') });
   let clip = await clipboard(app);
+  if (clip.image?.png) writeFileSync(join(OUT, 'quick-card.png'), Buffer.from(clip.image.png, 'base64'));
+  check(JSON.stringify(clip.types) === '["image/png"]' && clip.image?.w === 1000 && clip.image.h > 600 && clip.image.h < 1568, 'Zwischenablage: genau ein Bild (1000 px breit, nicht zu hoch für die Chats)', JSON.stringify({ types: clip.types, w: clip.image?.w, h: clip.image?.h }));
+
+  await drawer.locator('.q-row .btn', { hasText: 'Nur Text' }).click();
+  await drawer.locator('.q-note', { hasText: 'Text kopiert' }).waitFor();
+  clip = await clipboard(app);
   writeFileSync(join(OUT, 'quick-clipboard.md'), clip.text || '');
-  check(clip.types.includes('text/plain') && clip.types.includes('image/png') && clip.image?.w > 50, 'Zwischenablage: Text und Bild (PNG) zusammen', JSON.stringify({ types: clip.types, image: clip.image }));
+  check(JSON.stringify(clip.types) === '["text/plain"]', '„Nur Text“: nur der Text', JSON.stringify(clip.types));
   const md = clip.text || '';
   check(
     md.startsWith('**Feedback: Versandhinweis kaum lesbar**') &&
@@ -131,15 +147,20 @@ try {
     'Text für den KI-Chat: Titel, Seite, Einordnung, Beobachtung, Erwartung, Selektor, Kontrast, Umgebung, Bildhinweis',
     md,
   );
+  await drawer.locator('.q-row .btn', { hasText: 'Nur Screenshot' }).click();
+  await drawer.locator('.q-note', { hasText: 'Screenshot kopiert' }).waitFor();
+  clip = await clipboard(app);
+  if (clip.image?.png) writeFileSync(join(OUT, 'quick-shot.png'), Buffer.from(clip.image.png, 'base64'));
+  check(JSON.stringify(clip.types) === '["image/png"]' && clip.image?.w > 600 && clip.image.w !== 1000, '„Nur Screenshot“: nur der Ausschnitt in voller Größe, ohne Angaben', JSON.stringify({ types: clip.types, w: clip.image?.w }));
 
-  await drawer.locator('.q-row .btn', { hasText: 'Nur Text' }).click();
-  await drawer.locator('.q-note', { hasText: 'Text kopiert' }).waitFor();
+  // the earlier way stays: text and picture in one clipboard entry
+  await drawer.locator('.q-foot-done .btn', { hasText: 'Bearbeiten' }).click();
+  await drawer.locator('.q-format').selectOption('ai-text');
+  await drawer.locator('.q-foot-form .btn.primary').click();
+  await drawer.locator('.q-done').waitFor();
   clip = await clipboard(app);
-  check(JSON.stringify(clip.types) === '["text/plain"]' && clip.text.startsWith('**Feedback:'), '„Nur Text“: nur der Text', JSON.stringify(clip.types));
-  await drawer.locator('.q-row .btn', { hasText: 'Nur Bild' }).click();
-  await drawer.locator('.q-note', { hasText: 'Bild kopiert' }).waitFor();
-  clip = await clipboard(app);
-  check(JSON.stringify(clip.types) === '["image/png"]' && clip.image?.w > 50, '„Nur Bild“: nur der Screenshot', JSON.stringify(clip.types));
+  check(clip.types.includes('text/plain') && clip.types.includes('image/png') && clip.text.startsWith('**Feedback:') && clip.image.w !== 1000, '„KI-Chat: Text + Bild“: Text und Screenshot zusammen wie bisher', JSON.stringify(clip.types));
+  check((await drawer.locator('.q-row .btn').nth(1).textContent()) === 'Nur Bild', 'Dort heißt es wieder „Nur Bild“');
 
   await drawer.locator('.q-foot-done .btn', { hasText: 'Fertig' }).click();
   await app.waitForSelector('feedback-lens-ui', { state: 'detached', timeout: 5000 });
@@ -151,7 +172,7 @@ try {
 
   // --- Esc cancels while marking ---------------------------------------------------------
   await openPopup();
-  await popup.locator('section.quick .action', { hasText: 'Bereich' }).click();
+  await quickFromPopup('Bereich');
   await app.bringToFront();
   await app.waitForSelector('feedback-lens-ui', { state: 'attached' });
   check((await app.locator('.hint').textContent()).includes('Bereich aufziehen'), 'Bereich: Hinweis „Bereich aufziehen“');
@@ -162,7 +183,7 @@ try {
   // --- standard format „Teams, Outlook, Word“: formatted text with the picture inside -------
   await popup.evaluate(() => chrome.runtime.sendMessage({ type: 'fl:saveSettings', patch: { quickFormat: 'rich' } }));
   await openPopup();
-  await popup.locator('section.quick .action', { hasText: 'Seite' }).click();
+  await quickFromPopup('Seite');
   await app.bringToFront();
   await drawer.waitFor();
   check((await drawer.locator('.q-format').inputValue()) === 'rich', 'Standard aus den Einstellungen: Teams, Outlook, Word');
@@ -197,7 +218,7 @@ try {
   check((await popup.locator('.notice').first().textContent()).includes('gehört (noch) nicht zum laufenden Testlauf') && (await popup.locator('section.quick .action').count()) === 3, 'Menü im Testlauf, fremde Seite: auch hier Schnell-Anmerkung');
   check((await popup.evaluate(() => document.documentElement.scrollWidth)) <= 360, 'Passt auch dort ins Menü');
   await popup.screenshot({ path: join(OUT, 'quick-5-menu-run.png'), fullPage: true });
-  await popup.locator('section.quick .action', { hasText: 'Element' }).click();
+  await quickFromPopup('Element');
   await app.bringToFront();
   await app.waitForSelector('feedback-lens-ui', { state: 'attached' });
   const h1 = await app.locator('h1').first().boundingBox();
@@ -232,7 +253,7 @@ try {
   const toastText = await other.locator('.toast').textContent();
   clip = await clipboard(other);
   const saved = (await storage())[`fl:ann:${(await storage())['fl:active']}`] || [];
-  check(saved.length === 1 && toastText.includes('gespeichert und kopiert') && clip.types.includes('image/png') && clip.text.includes('Hinweis kaum lesbar (im Testlauf)'), 'Gespeichert und kopiert (Text + Bild)', JSON.stringify({ n: saved.length, toastText, types: clip.types }));
+  check(saved.length === 1 && toastText.includes('gespeichert und kopiert') && JSON.stringify(clip.types) === '["image/png"]' && clip.image.w === 1000, 'Gespeichert und kopiert (ein Bild mit allen Angaben)', JSON.stringify({ n: saved.length, toastText, types: clip.types, w: clip.image?.w }));
   check(errors.length === 0, 'Keine Fehler', errors.join(' | '));
 } catch (err) {
   failures.push(String(err?.stack || err));
