@@ -1,6 +1,6 @@
 // Launches Chromium with the extension loaded. The overlay's shadow root is
 // switched from "closed" to "open" in a temporary copy so Playwright can reach
-// the overlay's controls; nothing else is changed.
+// the overlay's controls (unless openShadow: false); nothing else is changed.
 import { createRequire } from 'node:module';
 import { cp, mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -12,14 +12,15 @@ const { chromium } = createRequire(import.meta.url)('playwright');
 
 export const EXT_SRC = fileURLToPath(new URL('../extension/', import.meta.url));
 
-export async function launch({ headless = true, viewport = { width: 1280, height: 860 }, manifestPatch = null } = {}) {
+export async function launch({ headless = true, viewport = { width: 1280, height: 860 }, manifestPatch = null, openShadow = true } = {}) {
   const work = await mkdtemp(join(process.env.FL_TMP || tmpdir(), 'fl-e2e-'));
   const ext = join(work, 'extension');
   await cp(EXT_SRC, ext, { recursive: true });
   const overlay = join(ext, 'src/content/overlay.js');
   const code = await readFile(overlay, 'utf8');
   if (!code.includes("attachShadow({ mode: 'closed' })")) throw new Error('shadow root marker not found');
-  await writeFile(overlay, code.replace("attachShadow({ mode: 'closed' })", "attachShadow({ mode: 'open' })"));
+  // openShadow: false keeps it closed, as shipped (clicks by position only)
+  if (openShadow) await writeFile(overlay, code.replace("attachShadow({ mode: 'closed' })", "attachShadow({ mode: 'open' })"));
   if (manifestPatch) {
     // e.g. a fixed "key", so the extension ID is known before the browser starts (policy test)
     const manifest = join(ext, 'manifest.json');

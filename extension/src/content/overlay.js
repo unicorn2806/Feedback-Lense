@@ -2954,8 +2954,14 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     // leaving the page with an open dialog: keep what was typed as a draft
     if (drawer?.dirty?.()) drawer.park({ quiet: true });
   });
+  // A click beside the list of drafts closes it. The window cannot see into our
+  // closed shadow root (composedPath() stops at the host), so clicks in our own
+  // UI are judged from inside it.
   listen(window, 'pointerdown', (e) => {
-    if (draftMenu && !e.composedPath().includes(draftMenu) && !e.composedPath().includes(draftBtn)) closeDraftMenu();
+    if (draftMenu && !isOurs(e)) closeDraftMenu();
+  }, { capture: true });
+  listen(root, 'pointerdown', (e) => {
+    if (draftMenu && !draftMenu.contains(e.target) && !draftBtn.contains(e.target)) closeDraftMenu();
   }, { capture: true });
   listen(document, 'visibilitychange', () => {
     if (document.visibilityState === 'hidden') flush();

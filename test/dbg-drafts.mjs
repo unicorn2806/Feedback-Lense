@@ -1,0 +1,42 @@
+import { startServer } from './server.mjs';
+import { launch } from './launch.mjs';
+const PORT = 4189, APP = `http://localhost:${PORT}/`;
+const OUT = '/tmp/fl-e2e-out';
+const server = await startServer(PORT);
+const { context, sw, extUrl, cleanup } = await launch({ viewport: { width: 1280, height: 800 } });
+try {
+  const app = await context.newPage();
+  app.on('console', (m) => m.type() === 'error' && console.log('console:', m.text()));
+  app.on('pageerror', (e) => console.log('pageerror:', e.message));
+  await app.goto(APP);
+  const ext = await context.newPage();
+  await ext.goto(extUrl('src/popup/popup.html'));
+  await ext.evaluate((url) => chrome.runtime.sendMessage({ type: 'fl:startSession', name: 'Entwürfe', url }), APP);
+  await app.bringToFront();
+  await app.waitForSelector('feedback-lens-ui', { state: 'attached' });
+  await app.waitForTimeout(500);
+  const command = (action) => sw.evaluate(async ({ action, url }) => { const [tab] = (await chrome.tabs.query({})).filter((t) => t.url === url); await chrome.tabs.sendMessage(tab.id, { type: 'fl:command', action }); }, { action, url: app.url() });
+  const pick = async (sel) => { await command('pick'); const b = await app.locator(sel).first().boundingBox(); await app.mouse.move(b.x + 10, b.y + b.height / 2); await app.mouse.click(b.x + 10, b.y + b.height / 2); await app.locator('.drawer textarea').first().waitFor(); };
+  await pick('h1');
+  await app.locator('.drawer textarea').first().fill('Erster Entwurf');
+  await app.locator('.drawer .d-aside').click();
+  await app.locator('.drawer').waitFor({ state: 'detached' });
+  await app.waitForTimeout(400);
+  await pick('.hint-text');
+  await app.locator('.drawer textarea').first().fill('Zweiter Entwurf');
+  await app.locator('.drawer .d-aside').click();
+  await app.locator('.drawer').waitFor({ state: 'detached' });
+  await app.waitForTimeout(600);
+  console.log('button:', await app.locator('.toolbar .tb-draft').textContent());
+  await app.locator('.toolbar .tb-draft').click();
+  await app.waitForTimeout(300);
+  console.log('menu items:', await app.locator('.draft-menu button').count());
+  await app.screenshot({ path: `${OUT}/dbg-drafts-menu.png` });
+  await app.locator('.draft-menu button').first().click();
+  await app.waitForTimeout(800);
+  console.log('drawer open after first item:', await app.locator('.drawer').count(), 'toast:', await app.locator('.toast').textContent());
+  await app.screenshot({ path: `${OUT}/dbg-drafts-after.png` });
+} finally {
+  await cleanup();
+  server.close();
+}

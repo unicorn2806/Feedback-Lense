@@ -354,6 +354,7 @@ node test/security.mjs     # Domain-Prüfung, Hooks beim Beenden, Screenshot-Pr�
 node test/marks.mjs        # großer Editor, Klicks als Nummern, Nummern von Hand, Schwärzen, Nachzeichnen im Dashboard, Legende
 node test/shapes.mjs       # Formen und Farben, Umschalt, Auswählen/Verschieben/Umfärben/Entfernen, Rückgängig
 node test/drafts.mjs       # „Kurz zur Seite“: Entwurf über Neuladen, Seitenwechsel, mehrere Entwürfe, zweiter Tab
+node test/closed.mjs       # Bedienung mit geschlossenem Shadow-DOM wie ausgeliefert (Entwurf aus der Liste fortsetzen)
 node test/quick.mjs        # Schnell-Anmerkung ohne Testlauf: Menü, Markieren, Kopieren als ein Bild, Nur Text/Screenshot, Formate, Esc, Freigabe nur für den Tab, „Speichern & kopieren“
 node test/extras.mjs       # mehrere Screenshots: über Seiten hinweg, Reihenfolge, Nachtrag, Einfügen im Dashboard, Export, Sicherung
 node test/duration.mjs     # Testzeit: Abschnitte, Pausen ohne Aktivität, alte Testläufe, Anzeige und Export
