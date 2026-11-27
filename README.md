@@ -33,7 +33,7 @@ durchklicken & anmerken    ──▶    Repository legen (feedback/)  ──▶ 
 
 > Voraussetzung: ein Chromium-Browser ab Version 116 (Chrome, Edge, Brave, Opera, Vivaldi, Arc).
 
-1. Die Datei `feedback-lens-1.14.0.zip` entpacken.
+1. Die Datei `feedback-lens-1.15.0.zip` entpacken.
 2. Im Browser `chrome://extensions` öffnen (Edge: `edge://extensions`).
 3. Oben rechts den **Entwicklermodus** einschalten.
 4. **„Entpackte Erweiterung laden“** klicken und den entpackten Ordner `extension` auswählen (der Ordner, in dem `manifest.json` liegt).
@@ -53,7 +53,8 @@ Für lokale Dateien (`file://…`) zusätzlich in den Details der Erweiterung **
 4. Normal durch die Anwendung klicken. Wenn dir etwas auffällt:
    - **Element markieren** (Fadenkreuz oder `Alt+Shift+E`) → Element anklicken (mit `↑` zum umgebenden Element),
    - **Bereich markieren** (Rahmen oder `Alt+Shift+D`) → Rechteck aufziehen,
-   - **Seiten-Notiz** (Notiz-Symbol oder `Alt+Shift+S`).
+   - **Seiten-Notiz** (Notiz-Symbol oder `Alt+Shift+S`),
+   - **Notiz ohne Screenshot** (**＋** in der Leiste oder im Popup) – für Feedback, zu dem es kein Bild braucht (z. B. „Der ganze Ablauf ist zu lang“). Bilder oder Dateien lassen sich im Dialog trotzdem hinzufügen.
 5. Im Dialog Kategorie und Priorität wählen, **beschreiben, was dich stört**, und optional, was du erwartet hättest. Den Screenshot kannst du bearbeiten (siehe unten). `Strg+Enter` speichert.
 6. Zum Schluss im Popup **„Beenden & exportieren“** – das Paket wird heruntergeladen. Ohne Export geht **„Beenden“** (exportieren und fortsetzen lässt sich später im Dashboard). Für eine Unterbrechung gibt es **„Pausieren“**: Erfassung und Testzeit ruhen, und das Popup zeigt den Testlauf oben mit **„Fortsetzen“** an.
 
@@ -69,7 +70,7 @@ Für lokale Dateien (`file://…`) zusätzlich in den Details der Erweiterung **
 - **Später im Dashboard:** „nachzeichnen“ unter dem Vorschaubild (oder „Nachzeichnen“ in der Großansicht) ergänzt Formen, Nummern, Klicks und geschwärzte Stellen. Bereits Gespeichertes lässt sich dort nicht mehr entfernen – Feedback Lens bewahrt bewusst nur das fertige Bild auf, damit Geschwärztes nirgends im Original übrig bleibt.
 - Im Export stehen die Nummern mit deinen Notizen direkt unter der Beobachtung („Zu den Nummern im Screenshot“), z. B. „① Klick auf ‚Weiter‘ (`button#next`, 14:03:12) – danach passiert 3 s nichts“ – so kann Claude Code Bild, Element im Code und Erklärung zusammenbringen. Im Dashboard lassen sich die Notizen an jeder Anmerkung nachträglich ändern.
 
-**Mehrere Screenshots**
+**Mehrere Screenshots, Bilder und Dateien vom Rechner**
 
 Für einen Ablauf („erst so, nach dem Klick so“), einen Zustand (Menü offen, Fehlermeldung) oder dieselbe Stelle auf einer anderen Seite:
 
@@ -77,7 +78,13 @@ Für einen Ablauf („erst so, nach dem Klick so“), einen Zustand (Menü offen
 2. Die Seite vorbereiten: scrollen, klicken, Menü öffnen, auch auf eine **andere Seite** wechseln.
 3. In der Leiste **Element**, **Bereich** oder **Seite** wählen (oder per Tastenkürzel – wichtig für Hover-Zustände) bzw. im Hinweis „Sichtbaren Bereich aufnehmen“. Danach geht der Dialog mit dem neuen Bild wieder auf.
 
-Jedes weitere Bild („Bild 2“, „Bild 3“ …, bis zu 8 Screenshots je Anmerkung) bekommt eine **Beschriftung**, lässt sich **umsortieren**, **entfernen** und – Klick auf die Vorschau – groß **bearbeiten** (Formen, Nummern mit Notizen, Schwärzen). Bei „Zu #n hinzufügen“ wird der Screenshot als weiteres Bild an #n angehängt (abwählbar). Im **Dashboard** lassen sich unter jeder Anmerkung Bilder **einfügen** (`Strg+V`, Datei ziehen oder wählen – z. B. ein Handy-Screenshot), beschriften, verschieben, nachzeichnen und entfernen. Im Export stehen sie mit Beschriftung, Seite und ihren Nummern direkt unter dem jeweiligen Bild.
+Jedes weitere Bild („Bild 2“, „Bild 3“ …, bis zu 8 Bilder je Anmerkung; bei einer Notiz ohne Screenshot ab „Bild 1“) bekommt eine **Beschriftung**, lässt sich **umsortieren**, **entfernen** und – Klick auf die Vorschau – groß **bearbeiten** (Formen, Nummern mit Notizen, Schwärzen). Bei „Zu #n hinzufügen“ wird der Screenshot als weiteres Bild an #n angehängt (abwählbar). Im Export stehen sie mit Beschriftung, Seite und ihren Nummern direkt unter dem jeweiligen Bild.
+
+**Vom Rechner hinzufügen** – im Dialog (Knopf „Vom Rechner hinzufügen“, eine Datei in den Dialog ziehen oder `Strg+V`) und im Dashboard unter jeder Anmerkung („Bild / Datei“):
+
+- **Bilder** (PNG, JPEG, WebP, GIF – z. B. ein Handy-Screenshot) werden zu weiteren Bildern: beschriften, bearbeiten und schwärzen wie ein Screenshot.
+- **Andere Dateien** (Log, PDF, Video, HAR, Excel …) werden **Anhänge**: bis zu 10 je Anmerkung, je höchstens 10 MB, zusammen 25 MB. Im Export liegen sie unter `anhaenge/` und sind in der Anmerkungsdatei, im Bericht (als Download) und in `feedback.json` verlinkt; die Sicherung enthält sie mit. Im Dashboard lassen sie sich herunterladen oder entfernen.
+- Anhänge werden nicht geschwärzt – vorher prüfen, dass nichts Vertrauliches darin steht.
 
 **Kurz zur Seite**
 
@@ -100,6 +107,7 @@ Mitten im Schreiben noch etwas nachsehen? **„Kurz zur Seite“** unten im Dial
 | `Alt+Shift+E` | Element markieren (außerhalb eines Testlaufs: [Schnell-Anmerkung](#schnell-anmerkung-eine-beobachtung-direkt-in-den-chat)) |
 | `Alt+Shift+D` | Bereich markieren (ebenso) |
 | `Alt+Shift+S` | Notiz zur ganzen Seite (ebenso) |
+| – (frei belegbar) | Notiz ohne Screenshot |
 | `Alt+Shift+F` | Feedback-Lens-Menü öffnen |
 | `↑` / `↓` / `Enter` / `Esc` | Während der Auswahl: umgebendes/inneres Element, übernehmen, abbrechen |
 
@@ -208,6 +216,7 @@ feedback-bestellportal-review-2026-10-28.zip
     │   └── …                eine Datei pro Anmerkung
     ├── screenshots/         je Anmerkung Ausschnitt (rot markiert) + gesamte Ansicht,
     │                        ggf. weitere Bilder (…-bild-2.png, …)
+    ├── anhaenge/            angehängte Dateien (nur wenn vorhanden, z. B. 03-1-server.log)
     ├── klickpfad.md         kompletter Ablauf mit Uhrzeiten, Klicks, Fehlern
     ├── feedback.json        alle Daten maschinenlesbar
     └── bericht.html         Bericht zum Lesen im Browser: aufklappbare Liste mit Suche
@@ -282,6 +291,7 @@ Weitere Formate im Dashboard unter **„Weitere Formate“**: alle Anmerkungen a
 - **Achtung:** Screenshots zeigen, was auf dem Bildschirm war – ggf. auch personenbezogene oder vertrauliche Daten (die automatische Schwärzung wirkt nur auf Texte). Vertrauliches im Bild mit „Schwärzen“ übermalen, am besten mit Testdaten testen und den Export vor der Weitergabe kurz prüfen.
 - Inhalte der getesteten Seite sind im Export als *Daten* gekennzeichnet; Claude Code wird angewiesen, darin enthaltenen Anweisungen nicht zu folgen.
 - **Diktat:** Spracherkennung nur auf dem Gerät; das Mikrofon ist nur aktiv, solange der Knopf rot ist. Die Mikrofon-Freigabe gehört der Erweiterung, die getesteten Seiten bekommen keinen Mikrofonzugriff.
+- **Dateien vom Rechner** (Bilder, Anhänge) speichert Feedback Lens lokal zur Anmerkung und gibt sie nur im Export bzw. in der Sicherung weiter. Anhänge werden weder geöffnet noch geschwärzt; im Dashboard und im Bericht lassen sie sich nur herunterladen, nicht darin anzeigen.
 - Konsolen-, Netzwerk- und Klick-Erfassung lassen sich in den Einstellungen einzeln abschalten. „Alle Daten löschen“ entfernt alles.
 
 ---
@@ -354,6 +364,7 @@ node test/security.mjs     # Domain-Prüfung, Hooks beim Beenden, Screenshot-Pr�
 node test/marks.mjs        # großer Editor, Klicks als Nummern, Nummern von Hand, Schwärzen, Nachzeichnen im Dashboard, Legende
 node test/shapes.mjs       # Formen und Farben, Umschalt, Auswählen/Verschieben/Umfärben/Entfernen, Rückgängig
 node test/drafts.mjs       # „Kurz zur Seite“: Entwurf über Neuladen, Seitenwechsel, mehrere Entwürfe, zweiter Tab
+node test/attachments.mjs  # Notiz ohne Screenshot (＋), Bilder und Dateien vom Rechner: Dialog, Entwurf, Strg+V, Dashboard, Paket, Bericht, JSON, Sicherung, Löschen
 node test/closed.mjs       # Bedienung mit geschlossenem Shadow-DOM wie ausgeliefert (Entwurf aus der Liste fortsetzen)
 node test/quick.mjs        # Schnell-Anmerkung ohne Testlauf: Menü, Markieren, Kopieren als ein Bild, Nur Text/Screenshot, Formate, Esc, Freigabe nur für den Tab, „Speichern & kopieren“
 node test/extras.mjs       # mehrere Screenshots: über Seiten hinweg, Reihenfolge, Nachtrag, Einfügen im Dashboard, Export, Sicherung

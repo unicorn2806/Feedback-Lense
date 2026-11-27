@@ -340,6 +340,26 @@ globalThis.FL_SAN = globalThis.FL_SAN || (() => {
     });
   }
 
+  /** A file from the computer attached to an annotation (the data is stored separately). */
+  function attachment(x) {
+    const o = obj(x);
+    if (!o) return null;
+    const name = fileName(o.name);
+    if (!name || !(typeof o.id === 'string' && /^f\d{1,2}$/.test(o.id))) return null;
+    return clean({ id: o.id, name, type: str(o.type, 100) || 'application/octet-stream', size: Math.max(0, Math.round(num(o.size) || 0)) });
+  }
+
+  /** A file name that is safe in a ZIP and on any system: no folders, no control or reserved characters. */
+  function fileName(v) {
+    const s = String(typeof v === 'string' ? v : '')
+      .split(/[\\/]/)
+      .pop()
+      .replace(/[\u0000-\u001f\u007f<>:"|?*]/g, '')
+      .replace(/^[.\s]+|[.\s]+$/g, '')
+      .slice(0, 120);
+    return s || '';
+  }
+
   function annotation(raw) {
     const o = obj(raw) || {};
     const images = obj(o.images) || {};
@@ -372,6 +392,7 @@ globalThis.FL_SAN = globalThis.FL_SAN || (() => {
         full: false,
         extra: arr(images.extra).slice(0, C.LIMITS.extraImages || 7).map(extraImage).filter(Boolean),
       },
+      attachments: arr(o.attachments).slice(0, C.LIMITS.attachments || 10).map(attachment).filter(Boolean),
       retest: retest(o.retest),
       planItem: str(o.planItem, 40),
       devResult: devResult(o.devResult),
@@ -503,6 +524,9 @@ globalThis.FL_SAN = globalThis.FL_SAN || (() => {
 
   const IMAGE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/;
   const isImage = (v) => typeof v === 'string' && v.length < 30e6 && IMAGE.test(v);
+  // an attached file: base64 data URL of any type, at most attachmentBytes (base64 is 4/3 larger)
+  const FILE_DATA = /^data:[\w.+-]+\/[\w.+-]+(;[\w.+-]+=[\w.+-]+)*;base64,[A-Za-z0-9+/]*={0,2}$/;
+  const isFileData = (v) => typeof v === 'string' && v.length <= Math.ceil(((C.LIMITS.attachmentBytes || 10485760) * 4) / 3) + 200 && FILE_DATA.test(v);
 
-  return Object.freeze({ str, num, iso, clean, techEvent, probe, annotation, extraImage, trailEntry, isImage, page, planItem, devResult, redact, redactDeep, checkpoint, checkResult, runs });
+  return Object.freeze({ str, num, iso, clean, techEvent, probe, annotation, extraImage, attachment, fileName, trailEntry, isImage, isFileData, page, planItem, devResult, redact, redactDeep, checkpoint, checkResult, runs });
 })();

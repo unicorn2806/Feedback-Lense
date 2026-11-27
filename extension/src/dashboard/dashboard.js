@@ -1,7 +1,7 @@
 import { C, categoryOf, priorityOf, formatDateTime, formatTime, hostOf, pathOf, annotationTitle, bytesToSize, originOf, safeUrl, shortcutKeys, testTimeText, sectionsText, IDLE_MS } from '../lib/util.js';
 import { h, icon, send, copyText, downloadBlob } from '../lib/dom.js';
 import { renderMarkdown } from '../lib/markdown.js';
-import { loadBundle, bundleTestTime, extrasOf, buildPreviewHtml, loadImages, loadPlanImages, planState, buildMarkdown, buildJson, buildHtml, buildZip, exportBaseName, issueParts, issueMarkdown, imageFiles, trailEntryText, techEventText, techEventLabel, retestState, retestIssueMarkdown, comparisonLines, verdictOf, parseDevResults } from '../lib/report.js';
+import { loadBundle, bundleTestTime, extrasOf, firstExtraNumber, attachmentsOf, loadFiles, buildPreviewHtml, loadImages, loadPlanImages, planState, buildMarkdown, buildJson, buildHtml, buildZip, exportBaseName, issueParts, issueMarkdown, imageFiles, trailEntryText, techEventText, techEventLabel, retestState, retestIssueMarkdown, comparisonLines, verdictOf, parseDevResults } from '../lib/report.js';
 import { parsePlan, serializePlan, serializeItems } from '../lib/testplan.js';
 
 const K = C.KEYS;
@@ -595,9 +595,10 @@ function annotationCard(a) {
     );
   } else {
     thumb.classList.add('empty');
-    thumb.textContent = 'Kein Screenshot';
+    thumb.textContent = 'Ohne Screenshot';
   }
   if (!a.retest) media.append(extrasGrid(a));
+  if (attachmentsOf(a).length) media.append(attachmentList(a));
 
   // header row
   const pick = h('input', { type: 'checkbox', 'aria-label': `Anmerkung #${a.number} für einen Teil-Export auswählen`, checked: state.picked.has(a.number) });
@@ -973,7 +974,8 @@ const loadBitmap = async (src) => (src ? createImageBitmap(await (await fetch(sr
 function extrasGrid(a) {
   const extras = extrasOf(a);
   const tiles = extras.map((x, i) => {
-    const tile = h('button.x-tile', { type: 'button', title: x.caption || `Bild ${i + 2}`, 'aria-label': `Bild ${i + 2} zu #${a.number} öffnen` }, h('span.x-n', { text: `Bild ${i + 2}` }));
+    const n = i + firstExtraNumber(a);
+    const tile = h('button.x-tile', { type: 'button', title: x.caption || `Bild ${n}`, 'aria-label': `Bild ${n} zu #${a.number} öffnen` }, h('span.x-n', { text: `Bild ${n}` }));
     thumbsFor(a).then((imgs) => {
       const src = imgs?.extra?.[x.id];
       if (src) tile.prepend(h('img', { src, alt: '', loading: 'lazy' }));
@@ -982,28 +984,69 @@ function extrasGrid(a) {
     return tile;
   });
   const full = extras.length >= C.LIMITS.extraImages;
-  const add = h('button.x-tile.x-plus', { type: 'button', disabled: full, title: full ? `Höchstens ${C.LIMITS.extraImages + 1} Screenshots pro Anmerkung` : 'Bild hinzufügen: einfügen (Strg+V) oder Datei wählen' }, icon('plus', 16), h('span', { text: 'Bild' }));
+  const add = h('button.x-tile.x-plus', { type: 'button', title: 'Bild oder Datei hinzufügen: einfügen (Strg+V), hierher ziehen oder wählen' }, icon('plus', 16), h('span', { text: 'Bild / Datei' }));
   add.addEventListener('click', () => addImageDialog(a));
   return h('div.x-grid', { role: 'group', 'aria-label': 'Weitere Screenshots' }, tiles, add);
 }
 
-/** Pictures from elsewhere (phone, other tools): paste, drop or choose; stored like a screenshot. */
+/** Files attached to an annotation: download (never opened here) or remove. */
+function attachmentList(a) {
+  const rows = attachmentsOf(a).map((f) => {
+    const get = h('button.btn.sm.ghost', { type: 'button', title: 'Herunterladen' }, icon('download', 14), h('span.f-name', { text: f.name }), h('small', { text: bytesToSize(f.size || 0) }));
+    get.addEventListener('click', async () => {
+      const key = K.file(a.id, f.id);
+      const data = (await chrome.storage.local.get(key))[key];
+      if (!data) return toast('Die Datei ist nicht mehr gespeichert.', 'error');
+      downloadBlob(await (await fetch(data)).blob(), f.name);
+    });
+    const drop = h('button.icon-btn', { type: 'button', title: 'Anhang entfernen', 'aria-label': `${f.name} entfernen` }, icon('trash', 14));
+    drop.addEventListener('click', async () => {
+      if (!(await confirmDialog({ title: `„${f.name}“ entfernen?`, text: `Der Anhang wird aus #${a.number} gelöscht.`, confirm: 'Entfernen' }))) return;
+      await send('fl:removeFile', { sessionId: session().id, id: a.id, fileId: f.id }).catch((err) => toast(err.message, 'error'));
+    });
+    return h('li', null, icon('file', 14), get, drop);
+  });
+  return h('div.f-box', null, h('div.f-head', { text: `Anhänge (${rows.length})` }), h('ul.f-list', null, rows));
+}
+
+/** Pictures (phone, other tools) become further screenshots, other files attachments: paste, drop or choose. */
 function addImageDialog(a) {
   let picked = [];
+  let others = [];
   const preview = h('div.x-preview');
+  const fileNames = h('ul.f-picked');
   const caption = h('input.input', { type: 'text', maxlength: '300', placeholder: 'Was zeigt das Bild? (optional)' });
-  const file = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp,image/gif', multiple: true, hidden: true });
+  const file = h('input', { type: 'file', multiple: true, hidden: true });
   const save = h('button.btn.primary', { type: 'button', disabled: true }, icon('check', 14), 'Hinzufügen');
   const room = C.LIMITS.extraImages - extrasOf(a).length;
   const take = async (files) => {
-    const images = [...files].filter((f) => /^image\/(png|jpeg|webp|gif)$/.test(f.type)).slice(0, room);
-    if (!images.length) return toast('Kein Bild gefunden – PNG, JPEG, WebP oder GIF.', 'error');
-    picked = await Promise.all(images.map(downscale));
+    const all = [...files];
+    const isPicture = (f) => /^image\/(png|jpeg|webp|gif)$/.test(f.type);
+    const images = all.filter(isPicture);
+    if (images.length > room) toast(room ? `Nur noch ${room} weitere Bilder möglich (höchstens ${C.LIMITS.extraImages + 1}).` : `#${a.number} hat schon ${C.LIMITS.extraImages + 1} Bilder.`, 'error');
+    const problems = [];
+    let total = attachmentsOf(a).reduce((sum, f) => sum + (f.size || 0), 0);
+    let count = attachmentsOf(a).length;
+    const files2 = [];
+    for (const f of all.filter((x) => !isPicture(x))) {
+      if (count >= C.LIMITS.attachments) problems.push(`${f.name}: höchstens ${C.LIMITS.attachments} Dateien`);
+      else if (f.size > C.LIMITS.attachmentBytes) problems.push(`${f.name}: größer als ${bytesToSize(C.LIMITS.attachmentBytes)}`);
+      else if (total + f.size > C.LIMITS.attachmentsBytes) problems.push(`${f.name}: zusammen mehr als ${bytesToSize(C.LIMITS.attachmentsBytes)}`);
+      else {
+        files2.push(f);
+        total += f.size;
+        count++;
+      }
+    }
+    if (problems.length) toast(`Nicht hinzugefügt – ${problems.join('; ')}`, 'error', 6000);
+    picked = await Promise.all(images.slice(0, room).map(downscale));
+    others = await Promise.all(files2.map(async (f) => ({ name: f.name, type: f.type || 'application/octet-stream', size: f.size, data: await fileToDataUrl(f) })));
     preview.replaceChildren(...picked.map((src) => h('img', { src, alt: '' })));
-    save.disabled = false;
-    save.focus();
+    fileNames.replaceChildren(...others.map((f) => h('li', null, icon('file', 14), h('span', { text: f.name }), h('small', { text: bytesToSize(f.size) }))));
+    save.disabled = !picked.length && !others.length;
+    if (!save.disabled) save.focus();
   };
-  const drop = h('div.x-drop', { tabindex: '0' }, icon('image', 22), h('b', { text: 'Bild einfügen (Strg+V) oder hierher ziehen' }), h('button.btn.sm', { type: 'button', text: 'Datei wählen …', on: { click: () => file.click() } }), preview);
+  const drop = h('div.x-drop', { tabindex: '0' }, icon('image', 22), h('b', { text: 'Bild oder Datei einfügen (Strg+V) oder hierher ziehen' }), h('button.btn.sm', { type: 'button', text: 'Datei wählen …', on: { click: () => file.click() } }), preview, fileNames);
   file.addEventListener('change', () => take(file.files));
   drop.addEventListener('dragover', (e) => e.preventDefault());
   drop.addEventListener('drop', (e) => {
@@ -1021,9 +1064,17 @@ function addImageDialog(a) {
   save.addEventListener('click', async () => {
     save.disabled = true;
     try {
-      const res = await send('fl:addImages', { sessionId: session().id, id: a.id, images: picked.map((dataUrl) => ({ dataUrl, meta: { caption: caption.value.trim() } })) });
+      const done = [];
+      if (picked.length) {
+        const res = await send('fl:addImages', { sessionId: session().id, id: a.id, images: picked.map((dataUrl) => ({ dataUrl, meta: { caption: caption.value.trim() } })) });
+        done.push(res.added === 1 ? 'Bild' : `${res.added} Bilder`);
+      }
+      if (others.length) {
+        const res = await send('fl:attachFiles', { sessionId: session().id, id: a.id, files: others.map(({ name, type, data }) => ({ name, type, data })) });
+        done.push(res.added === 1 ? 'Datei' : `${res.added} Dateien`);
+      }
       closeModal();
-      toast(`${res.added === 1 ? 'Bild' : `${res.added} Bilder`} zu #${a.number} hinzugefügt`);
+      toast(`${done.join(' und ')} zu #${a.number} hinzugefügt`);
     } catch (err) {
       save.disabled = false;
       toast(err.message, 'error');
@@ -1033,14 +1084,29 @@ function addImageDialog(a) {
     h(
       'div',
       null,
-      h('div.modal-head', null, h('h2', { text: `Bild zu #${a.number} hinzufügen` }), h('button.icon-btn', { type: 'button', 'aria-label': 'Schließen', on: { click: closeModal } }, icon('close', 18))),
-      h('div.modal-body', null, h('p.muted.small', { text: 'Etwa ein Handy-Screenshot oder ein Bild aus einem anderen Werkzeug. Es wird wie ein Screenshot gespeichert und exportiert – vorher prüfen, dass nichts Vertrauliches darauf ist (oder danach „Nachzeichnen“ → Schwärzen).' }), drop, file, h('label', null, 'Beschriftung', caption)),
+      h('div.modal-head', null, h('h2', { text: `Bild oder Datei zu #${a.number} hinzufügen` }), h('button.icon-btn', { type: 'button', 'aria-label': 'Schließen', on: { click: closeModal } }, icon('close', 18))),
+      h(
+        'div.modal-body',
+        null,
+        h('p.muted.small', { text: `Bilder (z. B. ein Handy-Screenshot) werden wie Screenshots gespeichert – danach lassen sie sich nachzeichnen und schwärzen. Andere Dateien (Log, PDF, Video …) kommen als Anhang ins Export-Paket, höchstens ${C.LIMITS.attachments} je Anmerkung, je bis ${bytesToSize(C.LIMITS.attachmentBytes)}. Vorher prüfen, dass nichts Vertrauliches darin ist.` }),
+        drop,
+        file,
+        h('label', null, 'Beschriftung der Bilder', caption),
+      ),
       h('div.modal-foot', null, h('button.btn', { type: 'button', text: 'Abbrechen', on: { click: closeModal } }), save),
     ),
   );
   $modal.addEventListener('close', () => document.removeEventListener('paste', onPaste), { once: true });
   drop.focus();
 }
+
+const fileToDataUrl = (blob) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error || new Error('Datei nicht lesbar'));
+    reader.readAsDataURL(blob);
+  });
 
 /** At most imageMaxEdge on the longer side; PNG for screenshot-sized pictures, JPEG for large ones. */
 async function downscale(blob) {
@@ -1080,7 +1146,7 @@ async function openExtra(a, extraId) {
     const x = list[i];
     const imgs = await loadImages([cur]);
     img.src = imgs.get(cur.id)?.extra?.[extraId] || '';
-    title.textContent = `#${cur.number} – Bild ${i + 2} von ${list.length + 1}`;
+    title.textContent = `#${cur.number} – Bild ${i + firstExtraNumber(cur)} von ${list.length + firstExtraNumber(cur) - 1}`;
     if (document.activeElement !== caption) caption.value = x.caption || '';
     meta.textContent = [x.kind === 'file' ? 'eingefügtes Bild' : 'Screenshot', x.t ? formatDateTime(x.t) : '', x.url ? pathOf(x.url) : ''].filter(Boolean).join(' · ');
     back.disabled = i === 0;
@@ -1115,7 +1181,7 @@ async function editExtraShot(a, extraId) {
     mount: dialog,
     views: [view],
     state: marks,
-    title: `#${a.number} – Bild ${extrasOf(a).indexOf(x) + 2} nachzeichnen`,
+    title: `#${a.number} – Bild ${extrasOf(a).indexOf(x) + firstExtraNumber(a)} nachzeichnen`,
     note: 'Bereits Gespeichertes bleibt – hier lässt sich nur ergänzen.',
     doneLabel: 'Speichern',
     onCancel: () => dialog.remove(),
@@ -1216,7 +1282,7 @@ async function openLightbox(annotationId) {
     const a = list[index];
     const imgs = await thumbsFor(a);
     const extra = extrasOf(a).filter((x) => imgs.extra?.[x.id]);
-    const views = [['crop', 'Ausschnitt'], ['full', 'Gesamte Ansicht'], ...extra.map((x, i) => [x.id, `Bild ${i + 2}`])].filter(([v]) => imgs[v] || imgs.extra?.[v]);
+    const views = [['crop', 'Ausschnitt'], ['full', 'Gesamte Ansicht'], ...extra.map((x, i) => [x.id, `Bild ${i + firstExtraNumber(a)}`])].filter(([v]) => imgs[v] || imgs.extra?.[v]);
     if (!views.some(([v]) => v === view)) view = views[0]?.[0];
     img.src = imgs[view] || imgs.extra?.[view] || '';
     img.alt = `Screenshot zu #${a.number}`;
@@ -1491,7 +1557,7 @@ const exportJson = () =>
 const exportBackup = () =>
   withBusy('Sicherung wird erstellt', async () => {
     const bundle = await loadBundle(session().id);
-    const json = buildJson(bundle, { images: await loadImages([...bundle.annotations, ...(bundle.plan || [])]), embed: true, planImages: await loadPlanImages(bundle) });
+    const json = buildJson(bundle, { images: await loadImages([...bundle.annotations, ...(bundle.plan || [])]), embed: true, planImages: await loadPlanImages(bundle), files: await loadFiles(bundle.annotations) });
     const blob = new Blob([JSON.stringify(json)], { type: 'application/json' });
     downloadBlob(blob, `${exportBaseName(bundle.session)}-sicherung.json`);
     toast(`Sicherung heruntergeladen (${bytesToSize(blob.size)})`);
@@ -1826,7 +1892,10 @@ $file.addEventListener('change', async () => {
         if (a && typeof a === 'object') {
           for (const variant of ['crop', 'full']) if (typeof a.imageData?.[variant] === 'string') images.push({ oldId: a.id, variant, dataUrl: a.imageData[variant] });
           for (const [variant, dataUrl] of Object.entries(a.imageData?.extra || {})) if (/^x\d{1,2}$/.test(variant) && typeof dataUrl === 'string') images.push({ oldId: a.id, variant, dataUrl });
+          // attached files travel the same way (f1 …)
+          for (const [variant, dataUrl] of Object.entries(a.fileData && typeof a.fileData === 'object' ? a.fileData : {})) if (/^f\d{1,2}$/.test(variant) && typeof dataUrl === 'string') images.push({ oldId: a.id, variant, dataUrl });
           delete a.imageData;
+          delete a.fileData;
         }
       }
     }

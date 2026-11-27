@@ -118,6 +118,9 @@
     camera: 'M4 8h3l2-3h6l2 3h3v11H4zM12 16.5a3.5 3.5 0 100-7 3.5 3.5 0 000 7z',
     draft: 'M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4',
     copy: 'M9 9h11v11H9zM5 15H4V4h11v1',
+    plus: 'M12 5v14M5 12h14',
+    clip: 'M20.5 11.5l-8.2 8.2a5 5 0 01-7.1-7.1l8.6-8.6a3.4 3.4 0 014.8 4.8l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9',
+    file: 'M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8zM14 3v5h5',
   };
 
   function icon(name, size = 18) {
@@ -298,6 +301,14 @@ details.tech summary span { font-weight: 400; color: #64748b; }
 .kv .warn { color: #b45309; }
 .d-foot { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-top: 1px solid #e2e8f0; background: #f8fafc; }
 .btn.save-copy { padding: 8px 10px; }
+.x-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.f-list { display: grid; gap: 4px; margin-bottom: 8px; }
+.f-list:empty { display: none; }
+.f-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 5px 6px 5px 10px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; color: #334155; font-size: 12.5px; }
+.f-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #0f172a; }
+.f-row small { color: #64748b; }
+.drawer.dropping { box-shadow: 0 0 0 3px #6366f1, 0 24px 60px rgba(2,6,23,.35); }
+.drawer.dropping .x-field { outline: 2px dashed #6366f1; outline-offset: 4px; border-radius: 10px; }
 .as-addition .save-copy { display: none; }
 .q-intro { margin: 0; padding: 9px 12px; border-radius: 10px; background: #eef2ff; color: #3730a3; font-size: 12.5px; line-height: 1.45; }
 .q-form { display: flex; flex-direction: column; gap: 14px; }
@@ -470,6 +481,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     tbButton('pick', 'pick', 'Element markieren', () => (state.mode === 'pick' ? stopPick() : startPick())),
     tbButton('region', 'region', 'Bereich markieren', () => (state.mode === 'region' ? stopRegion() : startRegion())),
     tbButton('note', 'note', 'Notiz zur ganzen Seite', () => startPageNote()),
+    tbButton('text', 'plus', 'Notiz ohne Screenshot', () => startTextNote()),
     draftBtn,
     h('div.sep'),
     tbButton('retest', 'checklist', 'Nachtest: frühere Anmerkungen prüfen', () => setRetestOpen(!state.ui.retestOpen)),
@@ -482,7 +494,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
   fab.addEventListener('mousedown', (e) => e.preventDefault());
   fab.addEventListener('click', () => setMinimized(false));
 
-  const COMMAND_OF = { pick: 'pick-element', region: 'select-region', note: 'page-note' };
+  const COMMAND_OF = { pick: 'pick-element', region: 'select-region', note: 'page-note', text: 'text-note' };
 
   function applyShortcuts(shortcuts = {}) {
     for (const [key, command] of Object.entries(COMMAND_OF)) {
@@ -799,6 +811,31 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     captureAndOpen({ kind: 'page' }).catch((err) => failCapture(err));
   }
 
+  /** Feedback without a screenshot: the dialog right away; pictures or files can still be added there. */
+  function startTextNote() {
+    if (state.mode === 'dialog' || state.mode === 'busy') return;
+    stopPick();
+    stopRegion();
+    closePopover();
+    const draft = {
+      kind: 'page',
+      textOnly: true,
+      el: null,
+      rect: null,
+      includeShot: false,
+      retest: null,
+      extras: [],
+      files: [],
+      scroll: [window.scrollX, window.scrollY],
+      page: scrub(X.pageInfo(state.settings.maskSensitiveParams)),
+      techEvents: recentTechEvents(),
+      probe: null,
+      marks: { items: [], clicks: [], showClicks: false, tool: M.DEFAULT_TOOL, view: 'full', frame: null },
+    };
+    if (state.quick) openQuickDrawer(draft);
+    else openDrawer(draft);
+  }
+
   function onPickKey(e) {
     if (!['Escape', 'ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) return;
     e.preventDefault();
@@ -974,6 +1011,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     if (d.shot) draft.bitmap = await createImageBitmap(dataUrlToBlob(d.shot));
     else draft.includeShot = false;
     draft.marks = { items: [], clicks: [], ...d.marks, history: [], selected: null };
+    draft.files = (Array.isArray(d.files) ? d.files : []).filter((f) => typeof f?.data === 'string' && typeof f.name === 'string');
     draft.extras = [];
     for (const x of Array.isArray(d.extras) ? d.extras : []) {
       if (!x?.shot) continue;
@@ -1295,6 +1333,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
   let drawer = null;
 
   function targetLabel(draft) {
+    if (draft.textOnly) return 'Notiz ohne Screenshot';
     if (draft.kind === 'element') return `${C.KINDS.element}: ${draft.element.label}`;
     if (draft.kind === 'region') return `${C.KINDS.region} ${Math.round(draft.rect.width)}×${Math.round(draft.rect.height)}`;
     return C.KINDS.page;
@@ -1450,7 +1489,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     if (showExtra >= 0) setTimeout(() => extrasSection?.reveal(showExtra), 60);
     else setTimeout(() => focusUnlessBusy(panel, description), 30);
 
-    const dirty = () => Boolean(title.value.trim() || description.value.trim() || expected.value.trim() || draft.marks.items.length || draft.marks.clicks.some((c) => c.note?.trim()) || draft.extras?.length);
+    const dirty = () => Boolean(title.value.trim() || description.value.trim() || expected.value.trim() || draft.marks.items.length || draft.marks.clicks.some((c) => c.note?.trim()) || draft.extras?.length || draft.files?.length);
 
     /** Everything needed to continue later – on this page or another one. */
     const snapshot = () => ({
@@ -1470,6 +1509,8 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       includeShot: draft.includeShot,
       marks: marksData(draft.marks),
       extras: (draft.extras || []).map((x) => ({ shot: x.shot, scale: x.scale, cropRect: x.cropRect, kind: x.kind, url: x.url, t: x.t, caption: x.caption, marks: marksData(x.marks) })),
+      files: (draft.files || []).map(({ name, type, size, data }) => ({ name, type, size, data })),
+      textOnly: draft.textOnly || undefined,
       retest: rt ? { number: rt.item.number, how: rt.how, onPage: rt.onPage } : null,
       values: { category: values.category, priority: values.priority, verdict: values.verdict, title: title.value, description: description.value, expected: expected.value, planItem: planSelect?.value || '', addTo: same.target?.id || null },
     });
@@ -1537,7 +1578,8 @@ details.tech summary span { font-weight: 400; color: #64748b; }
         let copied = '';
         if (copy) copied = await copyAnnotation(draft, annotation, state.settings.quickFormat).then(() => ' und kopiert', (err) => ` – kopieren fehlgeschlagen: ${err.message}`);
         flush(); // steps recorded so far must be stored before the annotation
-        const res = await call('fl:saveAnnotation', { sessionId: state.session.id, annotation, images });
+        const res = await call('fl:saveAnnotation', { sessionId: state.session.id, annotation, images, files: filesOf(draft) });
+        if (res.skippedFiles) copied += ` – ${res.skippedFiles} Datei(en) passten nicht dazu`;
         if (rt) {
           // Continue with the next earlier annotation that has not been checked yet.
           // by number: the plan may have been reloaded while the dialog was open
@@ -1565,7 +1607,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
         shots.push({ dataUrl: renderView(view, draft.marks), meta: { caption: 'Nachtrag', url: draft.page?.url, kind: draft.kind, t: new Date().toISOString(), ...M.legend(draft.marks) } });
       }
       for (const x of draft.extras || []) shots.push({ dataUrl: renderView(extraView(x), x.marks), meta: extraMeta(x) });
-      if (!description.value.trim() && !expected.value.trim() && !shots.length) {
+      if (!description.value.trim() && !expected.value.trim() && !shots.length && !draft.files?.length) {
         errorLine.textContent = `Bitte beschreiben, was du zu #${target.number} ergänzen möchtest.`;
         description.focus();
         return;
@@ -1573,15 +1615,40 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       save.disabled = true;
       try {
         flush();
-        const res = await call('fl:appendToAnnotation', { sessionId: state.session.id, id: target.id, description: description.value.trim(), expected: expected.value.trim(), images: shots });
+        const res = await call('fl:appendToAnnotation', { sessionId: state.session.id, id: target.id, description: description.value.trim(), expected: expected.value.trim(), images: shots, files: filesOf(draft) });
         closeDrawer();
-        toast(`Nachtrag zu #${target.number} gespeichert${res?.skipped ? ` – ${res.skipped} Screenshot(s) passten nicht mehr dazu (höchstens ${C.LIMITS.extraImages + 1})` : ''}`, res?.skipped ? 'error' : 'info', res?.skipped ? 5000 : 2600);
+        const left = [res?.skipped ? `${res.skipped} Screenshot(s) passten nicht mehr dazu (höchstens ${C.LIMITS.extraImages + 1})` : '', res?.skippedFiles ? `${res.skippedFiles} Datei(en) passten nicht mehr dazu` : ''].filter(Boolean).join(', ');
+        toast(`Nachtrag zu #${target.number} gespeichert${left ? ` – ${left}` : ''}`, left ? 'error' : 'info', left ? 5000 : 2600);
       } catch (err) {
         save.disabled = false;
         errorLine.textContent = `Speichern fehlgeschlagen: ${err.message}`;
       }
     }
 
+    // pictures and files from the computer: dropped onto the dialog or pasted (Strg+V)
+    if (extrasSection) {
+      panel.addEventListener('dragover', (e) => {
+        if (!e.dataTransfer?.types?.includes('Files')) return;
+        e.preventDefault();
+        panel.classList.add('dropping');
+      });
+      panel.addEventListener('dragleave', (e) => {
+        if (!panel.contains(e.relatedTarget)) panel.classList.remove('dropping');
+      });
+      panel.addEventListener('drop', (e) => {
+        panel.classList.remove('dropping');
+        if (!e.dataTransfer?.files?.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        extrasSection.addFiles(e.dataTransfer.files);
+      });
+      panel.addEventListener('paste', (e) => {
+        const files = [...(e.clipboardData?.files || [])];
+        if (!files.length) return;
+        e.preventDefault();
+        extrasSection.addFiles(files);
+      });
+    }
     save.addEventListener('click', () => doSave());
     saveCopy?.addEventListener('click', () => doSave({ copy: true }));
     aside.addEventListener('click', () => park());
@@ -1757,6 +1824,44 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     });
   }
 
+  /** The attached files of a draft as the service worker takes them. */
+  const filesOf = (draft) => (draft.files || []).map(({ name, type, data }) => ({ name, type, data }));
+
+  const fileSize = (bytes) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toLocaleString('de-DE', { maximumFractionDigits: 1 })} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
+
+  const readAsDataUrl = (blob) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result).replace(/^data:(;|,)/, 'data:application/octet-stream$1').replace(/^data:([^;,]+),/, 'data:$1;base64,'));
+      reader.onerror = () => reject(reader.error || new Error('nicht lesbar'));
+      reader.readAsDataURL(blob);
+    });
+
+  /** A picture from the computer as a further screenshot: at most imageMaxEdge, PNG or JPEG, ready to draw on. */
+  async function pictureFrom(file) {
+    const bmp = await createImageBitmap(file).catch(() => {
+      throw new Error('Bild lässt sich nicht lesen');
+    });
+    const k = Math.min(1, C.LIMITS.imageMaxEdge / Math.max(bmp.width, bmp.height));
+    const canvas = h('canvas');
+    canvas.width = Math.max(1, Math.round(bmp.width * k));
+    canvas.height = Math.max(1, Math.round(bmp.height * k));
+    canvas.getContext('2d').drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    const shot = canvas.width * canvas.height <= 1.4e6 ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', 0.88);
+    return {
+      shot,
+      bitmap: await createImageBitmap(dataUrlToBlob(shot)),
+      scale: 1,
+      cropRect: null,
+      kind: 'file',
+      url: '',
+      t: new Date().toISOString(),
+      caption: S.fileName(file.name).replace(/\.[a-z0-9]{2,5}$/i, ''),
+      marks: { items: [], clicks: [], showClicks: false, tool: M.DEFAULT_TOOL, view: 'full', frame: null },
+    };
+  }
+
   /** PNG for the clipboard (the only image type it takes), at most `max` px on the long edge. */
   async function toPng(dataUrl, max = 2000) {
     const bmp = await createImageBitmap(dataUrlToBlob(dataUrl));
@@ -1911,7 +2016,8 @@ details.tech summary span { font-weight: 400; color: #64748b; }
 
   function buildShotSection(draft, { quick = false } = {}) {
     if (!draft.bitmap) {
-      const el = h('div.field', null, h('div.label', { text: 'Screenshot' }), h('div.shot', null, h('div.noshot', { text: draft.shotError ? `Kein Screenshot möglich: ${draft.shotError}` : 'Kein Screenshot verfügbar.' })));
+      const why = draft.textOnly ? `Ohne Screenshot.${quick ? '' : ' Bilder oder Dateien lassen sich unten hinzufügen.'}` : draft.shotError ? `Kein Screenshot möglich: ${draft.shotError}` : 'Kein Screenshot verfügbar.';
+      const el = h('div.field', null, h('div.label', { text: 'Screenshot' }), h('div.shot', null, h('div.noshot', { text: why })));
       return { el, draw() {}, setAddition() {} };
     }
     const ms = draft.marks;
@@ -2032,12 +2138,23 @@ details.tech summary span { font-weight: 400; color: #64748b; }
    * remove; click the preview for the large editor) and the button to take one.
    */
   function buildExtras(draft, { onAdd }) {
+    draft.files ||= [];
+    const firstNumber = () => (draft.bitmap && draft.includeShot !== false ? 2 : 1); // „Bild 1“ in a note without a screenshot
     const list = h('div.x-list');
+    const fileList = h('div.f-list');
     const addTitle = 'Der Dialog geht kurz zur Seite: Seite vorbereiten (scrollen, Menü öffnen – auch auf einer anderen Seite), dann Element, Bereich oder Seite über die Leiste oder die Tastenkürzel aufnehmen. Danach geht es hier weiter.';
     const add = h('button.btn.small.x-add', { type: 'button', title: addTitle }, icon('camera', 15), 'Weiteren Screenshot aufnehmen');
     add.addEventListener('click', () => onAdd());
+    // from the computer: pictures become further screenshots (drawing, blacking out), other files attachments
+    const picker = h('input', { type: 'file', multiple: true, hidden: true });
+    const upload = h('button.btn.small.x-add', { type: 'button', title: 'Bilder (z. B. ein Handy-Screenshot) oder andere Dateien (Log, PDF, Video …) – auch per Ziehen in diesen Dialog oder Strg+V' }, icon('clip', 15), 'Vom Rechner hinzufügen');
+    upload.addEventListener('click', () => picker.click());
+    picker.addEventListener('change', () => {
+      addFiles(picker.files);
+      picker.value = '';
+    });
     const count = h('small');
-    const el = h('div.field.x-field', null, h('div.label', null, 'Weitere Screenshots ', count), list, add);
+    const el = h('div.field.x-field', null, h('div.label', null, 'Weitere Bilder & Dateien ', count), list, fileList, h('div.x-actions', null, add, upload), picker);
     const rows = new Map(); // extra → row
     function rowFor(x) {
       if (rows.has(x)) return rows.get(x);
@@ -2072,7 +2189,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
           mount: root,
           views: [extraView(x)],
           state: x.marks,
-          title: `Bild ${draft.extras.indexOf(x) + 2} bearbeiten`,
+          title: `Bild ${draft.extras.indexOf(x) + firstNumber()} bearbeiten`,
           decorateNote: (input) => withDictation(input, { inline: true }),
           onDone: () => paint(),
         }),
@@ -2087,25 +2204,61 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       list.replaceChildren(
         ...extras.map((x, i) => {
           const r = rowFor(x);
-          r.num.textContent = `Bild ${i + 2}`;
+          r.num.textContent = `Bild ${i + firstNumber()}`;
           // taken on another page than the first screenshot: say where
           const other = x.url && pageKey(x.url) !== pageKey(draft.page?.url || location.href);
-          r.meta.textContent = `${{ element: 'Element', region: 'Bereich', page: 'Seite' }[x.kind] || 'Bild'}${other ? ` · ${clip(x.url.replace(/^https?:\/\/[^/]+/, ''), 40)}` : ''}`;
+          r.meta.textContent = `${{ element: 'Element', region: 'Bereich', page: 'Seite', file: 'vom Rechner' }[x.kind] || 'Bild'}${other ? ` · ${clip(x.url.replace(/^https?:\/\/[^/]+/, ''), 40)}` : ''}`;
           r.up.disabled = i === 0;
           r.down.disabled = i === extras.length - 1;
           r.paint();
           return r.row;
         }),
       );
-      count.textContent = extras.length ? `(${extras.length})` : '– z. B. für einen Ablauf oder dieselbe Stelle auf einer anderen Seite';
+      fileList.replaceChildren(
+        ...draft.files.map((f) => {
+          const removeBtn = h('button.icon-btn', { type: 'button', title: 'Diese Datei entfernen', 'aria-label': `${f.name} entfernen` }, icon('trash', 15));
+          removeBtn.addEventListener('click', () => {
+            draft.files.splice(draft.files.indexOf(f), 1);
+            update();
+          });
+          return h('div.f-row', null, icon('file', 16), h('span.f-name', { text: f.name, title: f.name }), h('small', { text: fileSize(f.size) }), removeBtn);
+        }),
+      );
+      const n = extras.length + draft.files.length;
+      count.textContent = n ? `(${n})` : '– z. B. ein Ablauf, eine andere Seite, ein Handy-Screenshot oder eine Log-Datei';
       const full = extras.length >= C.LIMITS.extraImages;
       add.disabled = full;
       add.title = full ? `Höchstens ${C.LIMITS.extraImages + 1} Screenshots pro Anmerkung.` : addTitle;
+    }
+
+    /** Pictures (PNG, JPEG, WebP, GIF) become further screenshots, everything else an attachment. */
+    async function addFiles(files) {
+      const problems = [];
+      let total = draft.files.reduce((sum, f) => sum + f.size, 0);
+      for (const file of [...files]) {
+        try {
+          if (/^image\/(png|jpeg|webp|gif)$/.test(file.type) && file.size <= 40 * 1024 * 1024) {
+            if (draft.extras.length >= C.LIMITS.extraImages) throw new Error(`höchstens ${C.LIMITS.extraImages + 1} Bilder pro Anmerkung`);
+            draft.extras.push(await pictureFrom(file));
+          } else {
+            if (draft.files.length >= C.LIMITS.attachments) throw new Error(`höchstens ${C.LIMITS.attachments} Dateien pro Anmerkung`);
+            if (file.size > C.LIMITS.attachmentBytes) throw new Error(`größer als ${fileSize(C.LIMITS.attachmentBytes)}`);
+            if (total + file.size > C.LIMITS.attachmentsBytes) throw new Error(`zusammen mehr als ${fileSize(C.LIMITS.attachmentsBytes)}`);
+            draft.files.push({ name: S.fileName(file.name) || 'Datei', type: file.type || 'application/octet-stream', size: file.size, data: await readAsDataUrl(file) });
+            total += file.size;
+          }
+        } catch (err) {
+          problems.push(`${file.name}: ${err.message}`);
+        }
+      }
+      update();
+      if (problems.length) toast(`Nicht hinzugefügt – ${problems.join('; ')}`, 'error', 6000);
     }
     update();
     return {
       el,
       update,
+      addFiles,
       reveal(i) {
         const r = rowFor(draft.extras[i]);
         r?.row.scrollIntoView({ block: 'center' });
@@ -3004,6 +3157,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
     if (action === 'pick') state.mode === 'pick' ? stopPick() : startPick();
     else if (action === 'region') state.mode === 'region' ? stopRegion() : startRegion();
     else if (action === 'note') startPageNote();
+    else if (action === 'text') startTextNote();
     idleQuick(); // pressed again: cancelled
   }
 

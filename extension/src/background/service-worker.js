@@ -43,8 +43,32 @@ async function getSettings() {
 
 const getSessions = () => get(K.sessions, []);
 
-/** Storage keys of all screenshots of an annotation: crop, full view and the further ones (x1 …). */
-const imageKeys = (a) => [K.img(a.id, 'crop'), K.img(a.id, 'full'), ...(a.images?.extra || []).filter((x) => x.id).map((x) => K.img(a.id, x.id))];
+/** Storage keys of all screenshots of an annotation – crop, full view and the further ones (x1 …) – and of its attached files (f1 …). */
+const imageKeys = (a) => [K.img(a.id, 'crop'), K.img(a.id, 'full'), ...(a.images?.extra || []).filter((x) => x.id).map((x) => K.img(a.id, x.id)), ...(a.attachments || []).map((f) => K.file(a.id, f.id))];
+
+/**
+ * Attaches files from the computer to an annotation (in place) and returns how
+ * many fit; files: [{ name, type, data }] – data a base64 data URL. Over the
+ * limits (count, size per file, size of all) a file is left out.
+ */
+function addFiles(a, files, writes) {
+  const list = [...(a.attachments || [])];
+  let next = Math.max(0, ...list.map((f) => Number(f.id.slice(1)) || 0)) + 1;
+  let total = list.reduce((sum, f) => sum + (f.size || 0), 0);
+  for (const file of Array.isArray(files) ? files : []) {
+    if (list.length >= C.LIMITS.attachments || !S.isFileData(file?.data)) continue;
+    const size = Math.floor((file.data.length - file.data.indexOf(',') - 1) * 0.75) - (file.data.endsWith('==') ? 2 : file.data.endsWith('=') ? 1 : 0);
+    if (size > C.LIMITS.attachmentBytes || total + size > C.LIMITS.attachmentsBytes) continue;
+    const meta = S.attachment({ id: `f${next++}`, name: file.name, type: file.type, size });
+    if (!meta) continue;
+    writes[K.file(a.id, meta.id)] = file.data;
+    list.push(meta);
+    total += size;
+  }
+  const added = list.length - (a.attachments?.length || 0);
+  a.attachments = list;
+  return added;
+}
 
 /**
  * Adds further screenshots to an annotation (in place) and returns the
@@ -699,6 +723,12 @@ async function importImages({ sessionId, images }) {
         continue;
       }
       const ann = byId.get(img?.id);
+      // an attached file: its entry came with the annotation
+      if (ann && /^f\d{1,2}$/.test(img.variant) && (ann.attachments || []).some((f) => f.id === img.variant) && S.isFileData(img.dataUrl)) {
+        items[K.file(ann.id, img.variant)] = img.dataUrl;
+        stored++;
+        continue;
+      }
       if (!ann || !S.isImage(img.dataUrl)) continue;
       if (['crop', 'full'].includes(img.variant)) ann.images = { ...ann.images, [img.variant]: true };
       else if (!(ann.images?.extra || []).some((x) => x.id === img.variant)) continue;
@@ -725,7 +755,7 @@ async function resolveSessionId(sessionId) {
   return active.id;
 }
 
-async function saveAnnotation({ sessionId, annotation, images }) {
+async function saveAnnotation({ sessionId, annotation, images, files }) {
   const result = await locked(async () => {
     const sid = await resolveSessionId(sessionId);
     const sessions = await getSessions();
@@ -770,6 +800,9 @@ async function saveAnnotation({ sessionId, annotation, images }) {
     const extraMeta = ann.images.extra;
     ann.images.extra = [];
     addExtras(ann, extraMeta.map((meta, i) => ({ meta, dataUrl: Array.isArray(images?.extras) ? images.extras[i] : null })), items);
+    // attached files: only what is stored here counts (the page cannot claim others)
+    ann.attachments = [];
+    const skippedFiles = (Array.isArray(files) ? files.length : 0) - addFiles(ann, files, items);
     list.push(ann);
     items[K.ann(sid)] = list;
     const trail = await get(K.trail(sid), []);
@@ -781,7 +814,7 @@ async function saveAnnotation({ sessionId, annotation, images }) {
     items[K.sessions] = sessions;
     await set(items);
     if (stale.length) await remove(stale); // after the new check is stored
-    return { id, number, sessionId: sid };
+    return { id, number, sessionId: sid, skippedFiles };
   });
   await afterChange();
   return result;
@@ -841,8 +874,9 @@ const MAX_DRAFTS = 5;
 async function parkDraft({ sessionId, draft }) {
   if (!draft || typeof draft !== 'object' || Array.isArray(draft)) throw new Error('Ungültiger Entwurf.');
   if (draft.shot !== undefined && draft.shot !== null && !S.isImage(draft.shot)) throw new Error('Ungültiges Bild.');
+  for (const f of Array.isArray(draft.files) ? draft.files : []) if (!S.isFileData(f?.data)) throw new Error('Ungültige Datei.');
   const json = JSON.stringify(draft);
-  if (json.length > 25e6) throw new Error('Der Entwurf ist zu groß.');
+  if (json.length > 45e6) throw new Error('Der Entwurf ist zu groß (zu viele oder zu große Anhänge).');
   const summary = {
     id: uid('d'),
     parkedAt: nowIso(),
@@ -876,11 +910,12 @@ async function takeDraft({ sessionId, id }) {
   return data;
 }
 
-async function appendToAnnotation({ sessionId, id, description, expected, images }) {
+async function appendToAnnotation({ sessionId, id, description, expected, images, files }) {
   const text = S.str(String(description || '').trim(), 4000);
   const wish = S.str(String(expected || '').trim(), 4000);
   const shots = Array.isArray(images) ? images.slice(0, C.LIMITS.extraImages) : [];
-  if (!text && !wish && !shots.length) throw new Error('Bitte beschreiben, was du ergänzen möchtest.');
+  const attach = Array.isArray(files) ? files.slice(0, C.LIMITS.attachments) : [];
+  if (!text && !wish && !shots.length && !attach.length) throw new Error('Bitte beschreiben, was du ergänzen möchtest.');
   const result = await locked(async () => {
     const list = await get(K.ann(sessionId), []);
     const idx = list.findIndex((a) => a.id === id);
@@ -895,12 +930,13 @@ async function appendToAnnotation({ sessionId, id, description, expected, images
     const before = a.images?.extra?.length || 0;
     if (shots.length) addExtras(next, shots, writes);
     const added = (next.images?.extra?.length || 0) - before;
-    if (shots.length && !added && !text && !wish) throw new Error(`#${a.number} hat schon ${C.LIMITS.extraImages + 1} Screenshots.`);
+    const attached = attach.length ? addFiles(next, attach, writes) : 0;
+    if ((shots.length || attach.length) && !added && !attached && !text && !wish) throw new Error(`#${a.number} hat schon ${C.LIMITS.extraImages + 1} Screenshots bzw. ${C.LIMITS.attachments} Anhänge.`);
     list[idx] = next;
     const trail = await get(K.trail(sessionId), []);
     trail.push({ t: now, type: 'annotation', url: a.page?.url, number: a.number, label: `Nachtrag zu #${a.number}` });
     await set({ ...writes, [K.ann(sessionId)]: list, [K.trail(sessionId)]: trail.slice(-C.LIMITS.trailPerSession) });
-    return { number: a.number, added, skipped: shots.length - added };
+    return { number: a.number, added, skipped: shots.length - added, skippedFiles: attach.length - attached };
   });
   notifyTabs();
   return result;
@@ -923,6 +959,37 @@ async function addImages({ sessionId, id, images }) {
   });
   notifyTabs();
   return result;
+}
+
+/** Dashboard: files from the computer attached to an annotation. */
+async function attachFiles({ sessionId, id, files }) {
+  const result = await locked(async () => {
+    const list = await get(K.ann(sessionId), []);
+    const i = list.findIndex((a) => a.id === id);
+    if (i < 0) throw new Error('Anmerkung nicht gefunden.');
+    const a = { ...list[i] };
+    if ((a.attachments?.length || 0) >= C.LIMITS.attachments) throw new Error(`Höchstens ${C.LIMITS.attachments} Anhänge pro Anmerkung.`);
+    const writes = {};
+    const added = addFiles(a, files, writes);
+    list[i] = { ...a, updatedAt: nowIso() };
+    await set({ ...writes, [K.ann(sessionId)]: list });
+    return { added, skipped: (Array.isArray(files) ? files.length : 0) - added };
+  });
+  notifyTabs();
+  return result;
+}
+
+async function removeFile({ sessionId, id, fileId }) {
+  await locked(async () => {
+    const list = await get(K.ann(sessionId), []);
+    const i = list.findIndex((a) => a.id === id);
+    if (i < 0) throw new Error('Anmerkung nicht gefunden.');
+    if (!(list[i].attachments || []).some((f) => f.id === fileId)) return;
+    list[i] = { ...list[i], attachments: list[i].attachments.filter((f) => f.id !== fileId), updatedAt: nowIso() };
+    await set({ [K.ann(sessionId)]: list });
+    await remove([K.file(id, fileId)]);
+  });
+  notifyTabs();
 }
 
 /** Dashboard: caption, order or removal of a further screenshot. */
@@ -1122,7 +1189,7 @@ async function sendCommandToTab(tabId, action) {
 }
 
 chrome.commands.onCommand.addListener(async (command, tab) => {
-  const actions = { 'pick-element': 'pick', 'select-region': 'region', 'page-note': 'note' };
+  const actions = { 'pick-element': 'pick', 'select-region': 'region', 'page-note': 'note', 'text-note': 'text' };
   const action = actions[command];
   if (!action) return;
   const target = tab || (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
@@ -1148,7 +1215,7 @@ chrome.commands.onCommand.addListener(async (command, tab) => {
 // it is stored.
 const QUICK = 'fl:quick';
 const QUICK_MS = 30 * 60_000;
-const QUICK_ACTIONS = ['pick', 'region', 'note'];
+const QUICK_ACTIONS = ['pick', 'region', 'note', 'text'];
 
 const quickGrantOf = async () => (await chrome.storage.session.get(QUICK).catch(() => ({})))[QUICK] || null;
 
@@ -1291,6 +1358,8 @@ const handlers = {
   'fl:applyDevResults': { run: (msg) => applyDevResults(msg) },
   'fl:updateImages': { run: (msg) => updateImages(msg) },
   'fl:addImages': { run: (msg) => addImages(msg) },
+  'fl:attachFiles': { run: (msg) => attachFiles(msg) },
+  'fl:removeFile': { run: (msg) => removeFile(msg) },
   'fl:editExtra': { run: (msg) => editExtra(msg) },
   'fl:stopSession': { run: (msg) => stopSession({ pause: msg.pause === true, sessionId: typeof msg.sessionId === 'string' ? msg.sessionId : null }) },
   'fl:stopAndExport': {

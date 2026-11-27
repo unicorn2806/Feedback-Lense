@@ -1,4 +1,4 @@
-# Store-Eintrag – Feedback Lens 1.14.0
+# Store-Eintrag – Feedback Lens 1.15.0
 
 Alle Texte zum Kopieren in das Chrome Web Store Developer Dashboard (und Microsoft Partner Center für Edge). Felder in der Reihenfolge des Dashboards.
 
@@ -6,7 +6,7 @@ Alle Texte zum Kopieren in das Chrome Web Store Developer Dashboard (und Microso
 
 ## 1. Paket
 
-Datei: `feedback-lens-1.14.0-chrome-web-store.zip` (Ordner `dist/`) – `manifest.json` liegt auf oberster Ebene.
+Datei: `feedback-lens-1.15.0-chrome-web-store.zip` (Ordner `dist/`) – `manifest.json` liegt auf oberster Ebene.
 
 ---
 
@@ -31,7 +31,9 @@ Du klickst dich durch die Anwendung und markierst alles, was besser werden kann:
 ANMERKEN, WO ES PASSIERT
 • Element markieren (Alt+Shift+E), Bereich aufziehen (Alt+Shift+D) oder Notiz zur ganzen Seite (Alt+Shift+S)
 • Kategorie, Priorität, Beschreibung und Erwartung – im Screenshot Rahmen, Kreise, Pfeile und Linien in vier Farben setzen, nummerieren (mit Notiz je Nummer), die letzten Klicks einzeichnen oder Vertrauliches schwärzen; fensterfüllend und auch später im Dashboard
-• Mehrere Screenshots pro Anmerkung – z. B. für einen Ablauf oder dieselbe Stelle auf einer anderen Seite; im Dashboard auch Bilder einfügen (Strg+V)
+• Mehrere Screenshots pro Anmerkung – z. B. für einen Ablauf oder dieselbe Stelle auf einer anderen Seite
+• Vom Rechner hinzufügen: Bilder (z. B. Handy-Screenshots, bearbeitbar wie Screenshots) und Dateien wie Logs oder PDFs als Anhang – im Dialog und im Dashboard
+• Notiz ohne Screenshot – für Feedback, zu dem es kein Bild braucht
 • „Kurz zur Seite“: den Dialog parken, in der Anwendung nachsehen und weiterschreiben – der Entwurf übersteht auch Neuladen und Seitenwechsel
 • Diktieren statt tippen – Spracherkennung ausschließlich auf deinem Gerät
 

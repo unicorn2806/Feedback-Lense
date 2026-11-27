@@ -89,6 +89,9 @@ globalThis.FL_CONST = globalThis.FL_CONST || Object.freeze({
     text: 400,
     imageMaxEdge: 2576, // keeps text in screenshots sharp while bounding file size
     extraImages: 7, // further screenshots per annotation (besides the first one)
+    attachments: 10, // files from the computer per annotation (logs, PDFs, videos …)
+    attachmentBytes: 10 * 1024 * 1024, // per file
+    attachmentsBytes: 25 * 1024 * 1024, // all files of one annotation
   }),
 
   // Storage keys (chrome.storage.local)
@@ -101,6 +104,7 @@ globalThis.FL_CONST = globalThis.FL_CONST || Object.freeze({
     trail: (sid) => `fl:trail:${sid}`,
     tech: (sid) => `fl:tech:${sid}`,
     img: (annId, variant) => `fl:img:${annId}:${variant}`,
+    file: (annId, fileId) => `fl:file:${annId}:${fileId}`,
     plan: (sid) => `fl:plan:${sid}`, // re-test: snapshot of the earlier annotations
     templates: 'fl:templates', // test plan templates
     testPlan: (sid) => `fl:tp:${sid}`, // test plan of a run: snapshot + results

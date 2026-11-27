@@ -191,6 +191,9 @@ function recentList(sessions, tab) {
   return h('section.recent', null, h('h2', { text: 'Letzte Testläufe' }), h('ul', null, items));
 }
 
+/** A small button under the large ones: a note without a screenshot. */
+const textNoteButton = (onClick) => h('button.btn.ghost.block.text-note', { type: 'button', title: 'Anmerkung ohne Screenshot – Bilder oder Dateien lassen sich im Dialog hinzufügen', on: { click: onClick } }, icon('plus', 15), 'Notiz ohne Screenshot');
+
 /** A large button for marking (element, area, page) with its shortcut as keycaps. */
 function actionButton(name, label, onClick, shortcut, title = label) {
   const keys = shortcutKeys(shortcut);
@@ -228,6 +231,7 @@ function quickSection(tab, injectable, keys) {
           actionButton('note', 'Seite', go('note'), keys['page-note'], `${tip} – ganze Seite`),
         )
       : h('p.muted.small', { text: 'Auf dieser Seite nicht möglich (z. B. Browser-Seiten oder der Web Store).' }),
+    injectable ? textNoteButton(go('text')) : null,
     status,
   );
 }
@@ -247,11 +251,16 @@ function activeView(active, tab, injectable, tabInSession, keys) {
   let body;
   if (tabInSession) {
     body = h(
-      'div.actions',
-      null,
-      action('pick', 'Element', 'pick', keys['pick-element']),
-      action('region', 'Bereich', 'region', keys['select-region']),
-      action('note', 'Seiten-Notiz', 'note', keys['page-note']),
+      'div.stack',
+      { style: { gap: '6px' } },
+      h(
+        'div.actions',
+        null,
+        action('pick', 'Element', 'pick', keys['pick-element']),
+        action('region', 'Bereich', 'region', keys['select-region']),
+        action('note', 'Seiten-Notiz', 'note', keys['page-note']),
+      ),
+      textNoteButton(run('text')),
     );
   } else if (injectable) {
     const add = h('button.btn.primary.block', { type: 'button' }, icon('plus'), `${hostOf(tab.url)} zum Testlauf hinzufügen`);
