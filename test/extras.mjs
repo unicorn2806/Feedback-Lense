@@ -61,8 +61,8 @@ try {
   // --- first screenshot, then a further one on another page ----------------------------------
   await pick('.hint-text');
   await app.locator('.drawer textarea').first().fill('Rabatt wird auf der Lieferseite nicht übernommen.');
-  check((await rows.count()) === 0 && (await app.locator('.drawer .x-add').isVisible()), 'Dialog: „Weiteren Screenshot aufnehmen“');
-  await app.locator('.drawer .x-add').click();
+  check((await rows.count()) === 0 && (await app.locator('.drawer .x-add:has-text("Weiteren Screenshot")').isVisible()), 'Dialog: „Weiteren Screenshot aufnehmen“');
+  await app.locator('.drawer .x-add:has-text("Weiteren Screenshot")').click();
   await app.locator('.drawer').waitFor({ state: 'detached' });
   await awaitBar.waitFor();
   check((await awaitBar.textContent()).includes('Weiterer Screenshot für „Rabatt wird'), 'Hinweisleiste: wofür der nächste Screenshot ist', await awaitBar.textContent());
@@ -80,7 +80,7 @@ try {
   await rows.first().locator('input').fill('Lieferseite ohne Rabatt');
 
   // a third one: the visible area via the bar
-  await app.locator('.drawer .x-add').click();
+  await app.locator('.drawer .x-add:has-text("Weiteren Screenshot")').click();
   await app.locator('.drawer').waitFor({ state: 'detached' });
   await awaitBar.locator('button', { hasText: 'Sichtbaren Bereich aufnehmen' }).click();
   await app.locator('.drawer').waitFor();

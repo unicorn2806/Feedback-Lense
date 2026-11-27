@@ -1530,7 +1530,7 @@ details.tech summary span { font-weight: 400; color: #64748b; }
       closeDrawer();
       if (quiet) return;
       if (state.ui.minimized) setMinimized(false);
-      if (!awaitShot) toast('Zur Seite gelegt – weiter geht es über „Entwurf“ in der Leiste.', 'info', 4000);
+      if (!awaitShot) toast(`Zur Seite gelegt – weiter geht es über „${state.drafts.length > 1 ? `${state.drafts.length} Entwürfe` : 'Entwurf'}“ in der Leiste.`, 'info', 4000);
     }
     Object.assign(drawer, { dirty, park });
     const closeDrawer = () => {
